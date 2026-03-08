@@ -4,6 +4,8 @@ import 'package:projet_sejour/pages/map_page.dart';
 import 'package:projet_sejour/pages/tabs/home_tab.dart';
 import 'package:projet_sejour/widgets/custom_nav_bar.dart';
 import 'package:projet_sejour/pages/ar_page.dart';
+import 'package:projet_sejour/pages/itinerary/itinerary_overview_page.dart';
+import 'package:projet_sejour/pages/profile/profile_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -52,8 +54,8 @@ class _MainPageState extends State<MainPage> {
           const HomeTab(),
           const MapPage(),
           ARPage(isActive: _currentIndex == 2),
-          const Center(child: Text('TBD View')),
-          const Center(child: Text('Profile View')),
+          const ItineraryOverviewPage(),
+          const ProfilePage(),
         ],
       ),
       extendBody: true,
