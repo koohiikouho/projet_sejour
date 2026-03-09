@@ -178,8 +178,9 @@ class _ARPageState extends State<ARPage>
   }
 
   void _startCameraStream() {
-    if (_cameraController == null || !_cameraController!.value.isInitialized)
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
       return;
+    }
 
     _cameraController!.startImageStream((CameraImage image) async {
       if (!mounted) return;
