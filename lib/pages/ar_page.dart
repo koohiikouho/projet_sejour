@@ -295,7 +295,7 @@ class _ARPageState extends State<ARPage>
               child: SafeArea(
                 child: Column(
                   children: [
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 16),
                     Text(
                       "AR Scanner",
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(

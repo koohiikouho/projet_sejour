@@ -5,7 +5,9 @@ import 'package:projet_sejour/pages/tabs/home_tab.dart';
 import 'package:projet_sejour/widgets/custom_nav_bar.dart';
 import 'package:projet_sejour/pages/ar_page.dart';
 import 'package:projet_sejour/pages/itinerary/itinerary_overview_page.dart';
-import 'package:projet_sejour/pages/profile/profile_page.dart';
+import 'package:projet_sejour/pages/profile_page.dart';
+
+import 'package:projet_sejour/widgets/app_drawer.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -16,6 +18,7 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   final AuthService _authService = AuthService();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _isLoading = true;
   int _currentIndex = 0;
 
@@ -48,6 +51,20 @@ class _MainPageState extends State<MainPage> {
     }
 
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: const AppDrawer(),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 1,
+        title: Text(
+          'Projet Sejour',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
+      ),
       body: IndexedStack(
         index: _currentIndex,
         children: [
@@ -58,7 +75,6 @@ class _MainPageState extends State<MainPage> {
           const ProfilePage(),
         ],
       ),
-      extendBody: true,
       bottomNavigationBar: CustomNavBar(
         currentIndex: _currentIndex,
         onNavTap: _onNavTap,

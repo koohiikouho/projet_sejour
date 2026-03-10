@@ -13,22 +13,21 @@ class CustomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(left: 24.0, right: 24.0, bottom: 24.0),
-        child: Container(
-          height: 70,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(35),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
           ),
+        ],
+      ),
+      child: SafeArea(
+        bottom: true,
+        child: SizedBox(
+          height: 56,
           child: LayoutBuilder(
             builder: (context, constraints) {
               final double totalWidth = constraints.maxWidth;
@@ -56,7 +55,7 @@ class CustomNavBar extends StatelessWidget {
 
                       final double left =
                           (value * slotWidth) + (slotWidth / 2) - (width / 2);
-                      final double top = (70 / 2) - (height / 2);
+                      final double top = (56 / 2) - (height / 2);
 
                       return Positioned(
                         left: left,
@@ -98,42 +97,11 @@ class CustomNavBar extends StatelessWidget {
                           1,
                         ),
                       ),
-                      // Prominent AR Button
                       Expanded(
-                        child: Center(
-                          child: GestureDetector(
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              onNavTap(2);
-                            },
-                            child: AnimatedScale(
-                              scale: currentIndex == 2 ? 1.15 : 1.0,
-                              duration: const Duration(milliseconds: 200),
-                              curve: Curves.easeOutBack,
-                              child: Container(
-                                height: 50,
-                                width: 50,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withValues(alpha: 0.3),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.view_in_ar_rounded,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
+                        child: _buildNavItem(
+                          context,
+                          Icons.view_in_ar_rounded,
+                          2,
                         ),
                       ),
                       Expanded(
@@ -167,7 +135,7 @@ class CustomNavBar extends StatelessWidget {
       },
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        height: 70,
+        height: 56,
         child: Center(
           child: AnimatedScale(
             scale: isSelected ? 1.1 : 1.0,

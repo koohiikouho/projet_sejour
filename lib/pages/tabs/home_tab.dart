@@ -10,7 +10,7 @@ class HomeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.only(left: 24, right: 24, top: 60, bottom: 120),
+      padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 24),
       children: [
         // Announcements Section
         Text(

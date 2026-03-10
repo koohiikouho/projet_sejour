@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "652607774222",
+    "project_id": "sojournbeta",
+    "storage_bucket": "sojournbeta.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:652607774222:android:eadad254c8d986ca4c665f",
+        "android_client_info": {
+          "package_name": "com.example.projet_sejour"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-ecd1BVeVr8zeRTh0dysQBeEuC-fan2Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

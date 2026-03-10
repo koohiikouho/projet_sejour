@@ -1,8 +1,12 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart' as geo;
+import 'package:projet_sejour/widgets/team_bottom_sheet.dart';
+import 'package:projet_sejour/models/team_member_model.dart';
+import 'package:projet_sejour/services/location_sync_service.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -18,10 +22,22 @@ class _MapPageState extends State<MapPage> {
 
   bool is3DMode = false;
 
+  final LocationSyncService _syncService = LocationSyncService();
+  late Stream<List<TeamMember>> _teamStream;
+  StreamSubscription<List<TeamMember>>? _teamSubscription;
+  PointAnnotationManager? _pointAnnotationManager;
+
   @override
   void initState() {
     super.initState();
+    _teamStream = _syncService.getTeamLocations();
     _determinePosition();
+  }
+
+  @override
+  void dispose() {
+    _teamSubscription?.cancel();
+    super.dispose();
   }
 
   void _toggleMapMode() {
@@ -91,6 +107,20 @@ class _MapPageState extends State<MapPage> {
       // When we reach here, permissions are granted and we can
       // continue accessing the position of the device.
       currentPosition = await geo.Geolocator.getCurrentPosition();
+      
+      // Send our position to Firestore so others can see us
+      if (currentPosition != null) {
+        // TODO: In a real app, 'userId', 'name', and 'role' 
+        // would come from an Authentication Service.
+        _syncService.updateMyLocation(
+          userId: 'user_123',
+          name: 'Hiro Hamada',
+          role: 'Pilgrim / You',
+          position: currentPosition!,
+          isOnline: true,
+        );
+      }
+
       if (!mounted) return;
       setState(() => isLoading = false);
     } catch (e) {
@@ -100,7 +130,7 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
-  void _onMapCreated(MapboxMap mapboxMap) {
+  Future<void> _onMapCreated(MapboxMap mapboxMap) async {
     this.mapboxMap = mapboxMap;
     // Configure location puck to show user location
     mapboxMap.location.updateSettings(
@@ -112,6 +142,38 @@ class _MapPageState extends State<MapPage> {
         puckBearing: PuckBearing.HEADING,
       ),
     );
+
+    // Setup Point Annotations for Team Members
+    _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
+    
+    _teamSubscription = _teamStream.listen((members) {
+      _updateMapMarkers(members);
+    });
+  }
+
+  void _updateMapMarkers(List<TeamMember> members) async {
+    if (_pointAnnotationManager == null) return;
+    
+    // Clear old markers completely and redraw
+    await _pointAnnotationManager!.deleteAll();
+    
+    final List<PointAnnotationOptions> newAnnotations = members.where((m) => m.isOnline).map((member) {
+      // Create a mapbox marker for every online member
+      return PointAnnotationOptions(
+        geometry: Point(coordinates: Position(member.longitude, member.latitude)),
+        iconSize: 2.0, // Scale
+        iconImage: 'marker-15', // Temporary built-in icon until we render avatars
+        textField: member.name,
+        textOffset: [0.0, 1.5],
+        textColor: Colors.black.value,
+        textHaloColor: Colors.white.value,
+        textHaloWidth: 1.0,
+      );
+    }).toList();
+
+    if (newAnnotations.isNotEmpty) {
+      await _pointAnnotationManager!.createMulti(newAnnotations);
+    }
   }
 
   @override
@@ -175,22 +237,24 @@ class _MapPageState extends State<MapPage> {
             onMapCreated: _onMapCreated,
           ),
           // Map View Toggles
-          Positioned(
-            top: 60,
-            right: 16,
-            child: Column(
-              children: [
-                _buildMapActionButton(
-                  icon: is3DMode
-                      ? Icons.grid_view_rounded
-                      : Icons.layers_outlined,
-                  onTap: _toggleMapMode,
-                  label: is3DMode ? '2D' : '3D',
-                ),
-              ],
+            Positioned(
+              top: 60,
+              right: 16,
+              child: Column(
+                children: [
+                  _buildMapActionButton(
+                    icon: is3DMode
+                        ? Icons.grid_view_rounded
+                        : Icons.layers_outlined,
+                    onTap: _toggleMapMode,
+                    label: is3DMode ? '2D' : '3D',
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            // Draggable Team Members Bottom Sheet
+            TeamBottomSheet(teamStream: _teamStream),
+          ],
       ),
     );
   }
