@@ -33,104 +33,118 @@ class _TeamBottomSheetState extends State<TeamBottomSheet> {
               ),
             ],
           ),
-          child: Column(
-            children: [
-              // Grab Handle
-              Padding(
-                padding: const EdgeInsets.only(top: 12, bottom: 8),
-                child: Container(
-                  width: 40,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-              
-              // Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                child: Row(
+          child: CustomScrollView(
+            controller: scrollController,
+            slivers: [
+              SliverToBoxAdapter(
+                child: Column(
                   children: [
-                    Text(
-                      'Team Members',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
+                    // Grab Handle
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12, bottom: 8),
+                      child: Container(
+                        width: 40,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    
+                    // Header
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      child: Row(
+                        children: [
+                          Text(
+                            'Team Members',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        // In a real app writing to Firestore would trigger a Cloud Function.
-                        // For local testing, we trigger the local service directly.
-                        NotificationService.showLocalNotification(
-                          title: "Alert Triggered!", 
-                          body: "A team member needs your assistance."
-                        );
-                      },
-                      icon: const Icon(Icons.campaign, size: 16),
-                      label: const Text('Alert'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red.shade100,
-                        foregroundColor: Colors.red.shade900,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                        minimumSize: const Size(0, 32),
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: StreamBuilder<List<TeamMember>>(
-                        stream: widget.teamStream,
-                        builder: (context, snapshot) {
-                          int activeCount = 0;
-                          if (snapshot.hasData) {
-                            activeCount = snapshot.data!.where((m) => m.isOnline).length;
-                          }
-                          return Text(
-                            '$activeCount Active',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                          const SizedBox(width: 12),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              NotificationService.showLocalNotification(
+                                title: "Alert Triggered!", 
+                                body: "A team member needs your assistance."
+                              );
+                            },
+                            icon: const Icon(Icons.campaign, size: 16),
+                            label: const Text('Alert'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red.shade100,
+                              foregroundColor: Colors.red.shade900,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                              minimumSize: const Size(0, 32),
                             ),
-                          );
-                        }
+                          ),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: StreamBuilder<List<TeamMember>>(
+                              stream: widget.teamStream,
+                              builder: (context, snapshot) {
+                                int activeCount = 0;
+                                if (snapshot.hasData) {
+                                  activeCount = snapshot.data!.where((m) => m.isOnline).length;
+                                }
+                                return Text(
+                                  '$activeCount Active',
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                );
+                              }
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    const Divider(),
                   ],
                 ),
               ),
               
-              const Divider(),
-              
-              // Scrollable List
-              Expanded(
-                child: StreamBuilder<List<TeamMember>>(
-                  stream: widget.teamStream,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snapshot.hasError) {
-                      return const Center(child: Text("Error loading team data"));
-                    }
-                    
-                    final members = snapshot.data ?? [];
-                    if (members.isEmpty) {
-                      return const Center(child: Text("No team members found"));
-                    }
+              // Scrollable List of Members
+              StreamBuilder<List<TeamMember>>(
+                stream: widget.teamStream,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const SliverFillRemaining(child: Center(child: CircularProgressIndicator()));
+                  }
+                  if (snapshot.hasError) {
+                    debugPrint('Firebase Stream Error: \${snapshot.error}');
+                    return SliverFillRemaining(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            "Error: \${snapshot.error}",
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  
+                  final members = snapshot.data ?? [];
+                  if (members.isEmpty) {
+                    return const SliverFillRemaining(child: Center(child: Text("No team members found")));
+                  }
 
-                    return ListView.builder(
-                      controller: scrollController,
-                      itemCount: members.length,
-                      itemBuilder: (context, index) {
+                  return SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
                         final member = members[index];
                         return _buildTeamMember(
                           context,
@@ -143,9 +157,10 @@ class _TeamBottomSheetState extends State<TeamBottomSheet> {
                           isActive: member.isOnline,
                         );
                       },
-                    );
-                  }
-                ),
+                      childCount: members.length,
+                    ),
+                  );
+                }
               ),
             ],
           ),

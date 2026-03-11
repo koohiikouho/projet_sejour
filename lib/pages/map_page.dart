@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart' as geo;
 import 'package:projet_sejour/widgets/team_bottom_sheet.dart';
 import 'package:projet_sejour/models/team_member_model.dart';
 import 'package:projet_sejour/services/location_sync_service.dart';
+import 'package:projet_sejour/services/background_location_service.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -25,7 +26,7 @@ class _MapPageState extends State<MapPage> {
   final LocationSyncService _syncService = LocationSyncService();
   late Stream<List<TeamMember>> _teamStream;
   StreamSubscription<List<TeamMember>>? _teamSubscription;
-  PointAnnotationManager? _pointAnnotationManager;
+
 
   @override
   void initState() {
@@ -37,6 +38,8 @@ class _MapPageState extends State<MapPage> {
   @override
   void dispose() {
     _teamSubscription?.cancel();
+    _syncService.stopTrackingLocation(); // Keep for safety if any foreground streams were left
+    BackgroundLocationService.stop();
     super.dispose();
   }
 
@@ -106,19 +109,21 @@ class _MapPageState extends State<MapPage> {
 
       // When we reach here, permissions are granted and we can
       // continue accessing the position of the device.
-      currentPosition = await geo.Geolocator.getCurrentPosition();
+      // We add a timeout to prevent the app from freezing if the GPS hardware is stuck.
+      currentPosition = await geo.Geolocator.getCurrentPosition(
+        timeLimit: const Duration(seconds: 5),
+      ).catchError((e) {
+        // Fallback to last known position if active GPS timeout
+        return geo.Geolocator.getLastKnownPosition().then((pos) {
+          if (pos == null) throw Exception("Location timeout and no last known position");
+          return pos;
+        });
+      });
       
-      // Send our position to Firestore so others can see us
+      // Start continuously streaming our position to Firestore so others can see us move live
       if (currentPosition != null) {
-        // TODO: In a real app, 'userId', 'name', and 'role' 
-        // would come from an Authentication Service.
-        _syncService.updateMyLocation(
-          userId: 'user_123',
-          name: 'Hiro Hamada',
-          role: 'Pilgrim / You',
-          position: currentPosition!,
-          isOnline: true,
-        );
+        // Start the background isolate tracking
+        BackgroundLocationService.start();
       }
 
       if (!mounted) return;
@@ -129,6 +134,8 @@ class _MapPageState extends State<MapPage> {
       setState(() => isLoading = false);
     }
   }
+
+  CircleAnnotationManager? _circleAnnotationManager;
 
   Future<void> _onMapCreated(MapboxMap mapboxMap) async {
     this.mapboxMap = mapboxMap;
@@ -143,8 +150,8 @@ class _MapPageState extends State<MapPage> {
       ),
     );
 
-    // Setup Point Annotations for Team Members
-    _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
+    // Setup Circle Annotations as a reliable fallback for Team Members
+    _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
     
     _teamSubscription = _teamStream.listen((members) {
       _updateMapMarkers(members);
@@ -152,27 +159,28 @@ class _MapPageState extends State<MapPage> {
   }
 
   void _updateMapMarkers(List<TeamMember> members) async {
-    if (_pointAnnotationManager == null) return;
+    if (_circleAnnotationManager == null) return;
     
     // Clear old markers completely and redraw
-    await _pointAnnotationManager!.deleteAll();
+    await _circleAnnotationManager!.deleteAll();
     
-    final List<PointAnnotationOptions> newAnnotations = members.where((m) => m.isOnline).map((member) {
-      // Create a mapbox marker for every online member
-      return PointAnnotationOptions(
+    // Filter out offline members AND filter out our own user ID
+    // so we don't draw a red circle under our own blue location puck
+    final List<CircleAnnotationOptions> newAnnotations = members
+        .where((m) => m.isOnline && m.id != 'user_123')
+        .map((member) {
+      // Create a solid red circle marker for every online member
+      return CircleAnnotationOptions(
         geometry: Point(coordinates: Position(member.longitude, member.latitude)),
-        iconSize: 2.0, // Scale
-        iconImage: 'marker-15', // Temporary built-in icon until we render avatars
-        textField: member.name,
-        textOffset: [0.0, 1.5],
-        textColor: Colors.black.value,
-        textHaloColor: Colors.white.value,
-        textHaloWidth: 1.0,
+        circleColor: Colors.red.value,
+        circleRadius: 8.0,
+        circleStrokeColor: Colors.white.value,
+        circleStrokeWidth: 2.0,
       );
     }).toList();
 
     if (newAnnotations.isNotEmpty) {
-      await _pointAnnotationManager!.createMulti(newAnnotations);
+      await _circleAnnotationManager!.createMulti(newAnnotations);
     }
   }
 

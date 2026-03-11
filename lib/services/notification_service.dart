@@ -9,7 +9,34 @@ class NotificationService {
     // 1. Request permissions for iOS and Android 13+
     await FirebaseMessaging.instance.requestPermission();
 
-    // 2. Configure Local Notifications (for displaying the banner)
+    // 2. Create the background location channel required by flutter_background_service IMMIDIATELY
+    // otherwise the Android OS will kill the app when it tries to start the background service
+    const AndroidNotificationChannel locationChannel = AndroidNotificationChannel(
+      'location_channel', // id
+      'Location Tracking', // title
+      description: 'This channel is used for continuous background location tracking.', // description
+      importance: Importance.low, // importance must be low to avoid constant buzzing
+    );
+
+    await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(locationChannel);
+
+    // Create the high priority channel for alerts and badges
+    const AndroidNotificationChannel alertsChannel = AndroidNotificationChannel(
+      'team_alerts_channel', // id
+      'Team Alerts', // title
+      description: 'High priority alerts for team coordination and badges.', // description
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+    );
+
+    await _notificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(alertsChannel);
+
+    // 3. Configure Local Notifications (for displaying the banner)
     const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings initializationSettingsIOS = DarwinInitializationSettings();
     const InitializationSettings initializationSettings = InitializationSettings(
@@ -18,7 +45,7 @@ class NotificationService {
     );
     await _notificationsPlugin.initialize(settings: initializationSettings);
 
-    // 3. Listen to FCM streams in foreground
+    // 4. Listen to FCM streams in foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       if (message.notification != null) {
         showLocalNotification(

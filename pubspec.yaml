@@ -47,6 +47,8 @@ dependencies:
   firebase_messaging: ^16.1.2
   flutter_local_notifications: ^21.0.0
   vibration: ^3.1.8
+  flutter_dotenv: ^6.0.0
+  flutter_background_service: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +74,7 @@ flutter:
 
   assets:
     - assets/images/BigHero.jpg
+    - .env
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:projet_sejour/services/auth_service.dart';
+import 'package:projet_sejour/pages/badges_page.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -80,10 +81,25 @@ class AppDrawer extends StatelessWidget {
           ),
           
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+            child: GridView.count(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
               children: [
-                _buildDrawerItem(
+                _buildGridTile(
+                  context: context,
+                  icon: Icons.shield_outlined,
+                  title: 'Badges',
+                  onTap: () {
+                    Navigator.pop(context); // Close Drawer
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const BadgesPage()),
+                    );
+                  },
+                ),
+                _buildGridTile(
                   context: context,
                   icon: Icons.settings_outlined,
                   title: 'Settings',
@@ -92,7 +108,7 @@ class AppDrawer extends StatelessWidget {
                     // Navigate to Settings
                   },
                 ),
-                _buildDrawerItem(
+                _buildGridTile(
                   context: context,
                   icon: Icons.help_outline,
                   title: 'Help & Support',
@@ -101,7 +117,7 @@ class AppDrawer extends StatelessWidget {
                     // Navigate to Help & Support
                   },
                 ),
-                _buildDrawerItem(
+                _buildGridTile(
                   context: context,
                   icon: Icons.info_outline,
                   title: 'About Us',
@@ -116,26 +132,36 @@ class AppDrawer extends StatelessWidget {
           
           // Footer Section
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Column(
               children: [
                 const Divider(height: 1),
                 const SizedBox(height: 8),
-                _buildDrawerItem(
-                  context: context,
-                  icon: Icons.logout,
-                  title: 'Log Out',
-                  isDestructive: true,
+                ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  leading: Icon(Icons.logout, color: colorScheme.error, size: 26),
+                  title: Text(
+                    'Log Out',
+                    style: TextStyle(
+                      color: colorScheme.error,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   onTap: () async {
                     Navigator.pop(context);
                     await AuthService().logout();
                   },
+                  splashColor: colorScheme.error.withValues(alpha: 0.1),
+                  hoverColor: colorScheme.error.withValues(alpha: 0.05),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'Projet Sejour v1.0.0',
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                    color: colorScheme.onSurface.withValues(alpha: 0.4),
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -149,34 +175,58 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildDrawerItem({
+  Widget _buildGridTile({
     required BuildContext context,
     required IconData icon,
     required String title,
     required VoidCallback onTap,
-    bool isDestructive = false,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    final color = isDestructive ? colorScheme.error : colorScheme.onSurface;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: ListTile(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        leading: Icon(icon, color: color, size: 26),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: color,
-            fontSize: 16,
-            fontWeight: isDestructive ? FontWeight.w600 : FontWeight.w500,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        splashColor: colorScheme.primary.withValues(alpha: 0.1),
+        highlightColor: colorScheme.primary.withValues(alpha: 0.05),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: colorScheme.primary,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: colorScheme.onSurface,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
-        onTap: onTap,
-        splashColor: (isDestructive ? colorScheme.error : colorScheme.primary).withValues(alpha: 0.1),
-        hoverColor: (isDestructive ? colorScheme.error : colorScheme.primary).withValues(alpha: 0.05),
       ),
     );
   }

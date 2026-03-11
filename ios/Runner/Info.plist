@@ -30,6 +30,13 @@
 	<string>This app requires camera access for the AR scanner feature.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app requires access to your location to show your position on the map.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app needs access to your location in the background to continuously update your team on your whereabouts.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>processing</string>
+	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>This app requires microphone access for video recording within the AR feature.</string>
 	<key>UIApplicationSceneManifest</key>
