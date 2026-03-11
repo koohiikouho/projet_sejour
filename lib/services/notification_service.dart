@@ -16,7 +16,7 @@ class NotificationService {
       android: initializationSettingsAndroid,
       iOS: initializationSettingsIOS,
     );
-    await _notificationsPlugin.initialize(initializationSettings);
+    await _notificationsPlugin.initialize(settings: initializationSettings);
 
     // 3. Listen to FCM streams in foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -52,10 +52,10 @@ class NotificationService {
     );
 
     await _notificationsPlugin.show(
-      DateTime.now().millisecond,
-      title,
-      body,
-      platformChannelSpecifics,
+      id: DateTime.now().millisecond,
+      title: title,
+      body: body,
+      notificationDetails: platformChannelSpecifics,
     );
   }
 }
