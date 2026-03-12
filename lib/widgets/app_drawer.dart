@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:projet_sejour/services/auth_service.dart';
 import 'package:projet_sejour/pages/badges_page.dart';
+import 'package:projet_sejour/pages/chatbot_page.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -89,6 +90,18 @@ class AppDrawer extends StatelessWidget {
               children: [
                 _buildGridTile(
                   context: context,
+                  icon: Icons.chat_bubble_outline,
+                  title: 'Lumen AI',
+                  onTap: () {
+                    Navigator.pop(context); // Close Drawer
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ChatbotPage()),
+                    );
+                  },
+                ),
+                _buildGridTile(
+                  context: context,
                   icon: Icons.shield_outlined,
                   title: 'Badges',
                   onTap: () {
@@ -106,15 +119,6 @@ class AppDrawer extends StatelessWidget {
                   onTap: () {
                     Navigator.pop(context);
                     // Navigate to Settings
-                  },
-                ),
-                _buildGridTile(
-                  context: context,
-                  icon: Icons.help_outline,
-                  title: 'Help & Support',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to Help & Support
                   },
                 ),
                 _buildGridTile(
