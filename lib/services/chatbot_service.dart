@@ -16,11 +16,24 @@ class ChatbotService {
       apiKey: apiKey,
       defaultOptions: const ChatGoogleGenerativeAIOptions(
         model: 'gemini-2.5-flash',
+        temperature: 0.1,
       ),
     );
     
-    // Initial system message
-    _history.add(ChatMessage.system('You are Lumen AI Assistant, a helpful and friendly AI assistant for the Projet Sejour application.'));
+    // Initial system message with strict scope
+    _history.add(ChatMessage.system(
+      'You are Lumen AI Assistant, the official support assistant for the Projet Sejour application. '
+      'Your scope is strictly limited to helping users with information about Projet Sejour, travel, and their stay. '
+      'RULES: '
+      '1. ONLY answer questions related to Projet Sejour or travel/stay assistance. '
+      '2. NEVER provide programming code, technical development advice, or answers to general software engineering questions. '
+      '3. If a user asks something outside this scope, politely say: "I apologize, but I am only trained to assist with questions regarding Projet Sejour and your travel experience."'
+    ));
+
+    // Initial welcome message
+    _history.add(ChatMessage.ai(
+      'Hello! I am Lumen AI Assistant. How can I help you with your Projet Sejour experience today?'
+    ));
   }
 
   Future<String> getResponse(String message) async {
