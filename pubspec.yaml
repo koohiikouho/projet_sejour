@@ -29,6 +29,8 @@ dependencies:
   flutter_background_service: ^5.1.0
   langchain: 0.8.1
   langchain_google: 0.7.1
+  http: ^1.6.0
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:
