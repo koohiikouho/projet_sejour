@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:projet_sejour/services/auth_service.dart';
 import 'package:projet_sejour/pages/badges_page.dart';
 import 'package:projet_sejour/pages/chatbot_page.dart';
+import 'package:projet_sejour/pages/login_page.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -17,68 +18,79 @@ class AppDrawer extends StatelessWidget {
       child: Column(
         children: [
           // Custom Gradient Header
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 24,
-              bottom: 24,
-              left: 24,
-              right: 24,
-            ),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  colorScheme.primary,
-                  colorScheme.primary.withValues(alpha: 0.8),
-                ],
-              ),
-              borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(32),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
+          FutureBuilder<Map<String, String?>>(
+            future: AuthService().getUserData(),
+            builder: (context, snapshot) {
+              final userData = snapshot.data;
+              final name = userData?['name'] ?? 'User';
+              final profilePic = userData?['profilePic'];
+
+              return Container(
+                width: double.infinity,
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 24,
+                  bottom: 24,
+                  left: 24,
+                  right: 24,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      colorScheme.primary,
+                      colorScheme.primary.withValues(alpha: 0.8),
                     ],
                   ),
-                  child: const CircleAvatar(
-                    radius: 36,
-                    backgroundImage: AssetImage('assets/images/BigHero.jpg'),
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(32),
                   ),
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Baymax',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: CircleAvatar(
+                        radius: 36,
+                        backgroundImage: profilePic != null && profilePic.isNotEmpty
+                            ? NetworkImage(profilePic)
+                            : const AssetImage('assets/images/BigHero.jpg') as ImageProvider,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    Text(
+                      'Pilgrim',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  'Pilgrim',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+              );
+            },
           ),
           
           Expanded(
@@ -155,8 +167,14 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
                   onTap: () async {
-                    Navigator.pop(context);
-                    await AuthService().logout();
+                    final authService = AuthService();
+                    await authService.logout();
+                    if (context.mounted) {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (context) => const LoginPage()),
+                        (route) => false,
+                      );
+                    }
                   },
                   splashColor: colorScheme.error.withValues(alpha: 0.1),
                   hoverColor: colorScheme.error.withValues(alpha: 0.05),

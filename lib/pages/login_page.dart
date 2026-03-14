@@ -56,9 +56,9 @@ class _LoginPageState extends State<LoginPage>
     });
 
     try {
-      await _authService.mockGoogleLogin();
+      final userCredential = await _authService.signInWithGoogle();
 
-      if (mounted) {
+      if (userCredential != null && mounted) {
         setState(() {
           _isSuccess = true;
         });
@@ -80,9 +80,19 @@ class _LoginPageState extends State<LoginPage>
             ),
           );
         }
+      } else {
+        // Handle case where sign-in was cancelled or failed
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
-    } finally {
-      if (mounted && !_isSuccess) {
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login failed: $e')),
+        );
         setState(() {
           _isLoading = false;
         });
