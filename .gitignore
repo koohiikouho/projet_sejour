@@ -45,3 +45,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+android/gradle.properties
+
+# Claude Code
+.claude/
+
+# Personal context
+hadriel_context/

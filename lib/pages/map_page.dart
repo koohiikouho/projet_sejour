@@ -8,6 +8,8 @@ import 'package:projet_sejour/widgets/team_bottom_sheet.dart';
 import 'package:projet_sejour/models/team_member_model.dart';
 import 'package:projet_sejour/services/location_sync_service.dart';
 import 'package:projet_sejour/services/background_location_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:projet_sejour/services/team_service.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -24,14 +26,25 @@ class _MapPageState extends State<MapPage> {
   bool is3DMode = false;
 
   final LocationSyncService _syncService = LocationSyncService();
-  late Stream<List<TeamMember>> _teamStream;
+  Stream<List<TeamMember>>? _teamStream;
   StreamSubscription<List<TeamMember>>? _teamSubscription;
-
+  String? _teamId;
+  String get _currentUserId => FirebaseAuth.instance.currentUser?.uid ?? '';
 
   @override
   void initState() {
     super.initState();
-    _teamStream = _syncService.getTeamLocations();
+    _initTeamStream();
+  }
+
+  Future<void> _initTeamStream() async {
+    final teamId = await TeamService().getCurrentUserTeamId();
+    if (teamId != null && mounted) {
+      setState(() {
+        _teamId = teamId;
+        _teamStream = _syncService.getTeamLocations(teamId);
+      });
+    }
     _determinePosition();
   }
 
@@ -153,7 +166,7 @@ class _MapPageState extends State<MapPage> {
     // Setup Circle Annotations as a reliable fallback for Team Members
     _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
     
-    _teamSubscription = _teamStream.listen((members) {
+    _teamSubscription = _teamStream?.listen((members) {
       _updateMapMarkers(members);
     });
   }
@@ -167,7 +180,7 @@ class _MapPageState extends State<MapPage> {
     // Filter out offline members AND filter out our own user ID
     // so we don't draw a red circle under our own blue location puck
     final List<CircleAnnotationOptions> newAnnotations = members
-        .where((m) => m.isOnline && m.id != 'user_123')
+        .where((m) => m.isOnline && m.id != _currentUserId)
         .map((member) {
       // Create a solid red circle marker for every online member
       return CircleAnnotationOptions(
@@ -261,7 +274,8 @@ class _MapPageState extends State<MapPage> {
               ),
             ),
             // Draggable Team Members Bottom Sheet
-            TeamBottomSheet(teamStream: _teamStream),
+            if (_teamStream != null)
+              TeamBottomSheet(teamStream: _teamStream!),
           ],
       ),
     );

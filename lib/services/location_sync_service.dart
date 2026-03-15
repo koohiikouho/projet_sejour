@@ -6,18 +6,14 @@ import 'package:projet_sejour/services/badge_service.dart';
 
 class LocationSyncService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
-  // NOTE: For now, we use a single hardcoded team ID for demonstration
-  // In a full app, this would be tied to the user's active group
-  final String _currentTeamId = "team_alpha";
-  
+
   StreamSubscription<Position>? _positionStream;
 
   /// Subscribe to real-time location updates for all members in the team
-  Stream<List<TeamMember>> getTeamLocations() {
+  Stream<List<TeamMember>> getTeamLocations(String teamId) {
     return _firestore
         .collection('teams')
-        .doc(_currentTeamId)
+        .doc(teamId)
         .collection('members')
         .snapshots()
         .map((snapshot) {
@@ -27,6 +23,7 @@ class LocationSyncService {
 
   /// Update the current user's location in Firestore
   Future<void> updateMyLocation({
+    required String teamId,
     required String userId,
     required String name,
     required String role,
@@ -36,7 +33,7 @@ class LocationSyncService {
     try {
       await _firestore
           .collection('teams')
-          .doc(_currentTeamId)
+          .doc(teamId)
           .collection('members')
           .doc(userId)
           .set({
@@ -50,13 +47,13 @@ class LocationSyncService {
         'avatarUrl': 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(name)}&background=random',
       }, SetOptions(merge: true));
     } catch (e) {
-      // In a production app, handle this silently or log to a crashlytics service
       print('Error updating location: $e');
     }
   }
 
   /// Start a continuous stream that updates Firestore whenever the device moves
   void startTrackingLocation({
+    required String teamId,
     required String userId,
     required String name,
     required String role,
@@ -72,18 +69,19 @@ class LocationSyncService {
     _positionStream = Geolocator.getPositionStream(locationSettings: locationSettings)
         .listen((Position position) {
       updateMyLocation(
+        teamId: teamId,
         userId: userId,
         name: name,
         role: role,
         position: position,
         isOnline: true,
       );
-      
+
       // Check Badge Geofences
       BadgeService().checkLocationForBadges(
-        position.latitude, 
-        position.longitude, 
-        _currentTeamId, 
+        position.latitude,
+        position.longitude,
+        teamId,
         userId,
       );
     });

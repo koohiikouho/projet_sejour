@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:projet_sejour/services/auth_service.dart';
 import 'package:projet_sejour/pages/badges_page.dart';
 import 'package:projet_sejour/pages/chatbot_page.dart';
 import 'package:projet_sejour/pages/login_page.dart';
+import 'package:projet_sejour/pages/team_page.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -79,13 +82,25 @@ class AppDrawer extends StatelessWidget {
                         letterSpacing: 0.5,
                       ),
                     ),
-                    Text(
-                      'Pilgrim',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.85),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseAuth.instance.currentUser != null
+                          ? FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(FirebaseAuth.instance.currentUser!.uid)
+                              .snapshots()
+                          : null,
+                      builder: (context, roleSnapshot) {
+                        final role = (roleSnapshot.data?.data() as Map<String, dynamic>?)?['role'] ?? 'pilgrim';
+                        final displayRole = role.toString().substring(0, 1).toUpperCase() + role.toString().substring(1);
+                        return Text(
+                          displayRole,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -121,6 +136,18 @@ class AppDrawer extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const BadgesPage()),
+                    );
+                  },
+                ),
+                _buildGridTile(
+                  context: context,
+                  icon: Icons.group_outlined,
+                  title: 'Team',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const TeamPage()),
                     );
                   },
                 ),
