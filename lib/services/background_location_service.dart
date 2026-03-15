@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:projet_sejour/services/badge_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BackgroundLocationService {
   static Future<void> initialize() async {
@@ -72,11 +73,16 @@ void onStart(ServiceInstance service) async {
     distanceFilter: 10, 
   );
 
-  // Note: hardcoded 'user_123' for demonstration
-  // In a real app, we would pass SharedPreferences or secure storage user ID here
-  final String userId = 'user_123';
-  final String teamId = 'team_alpha';
-  final String userName = 'Hiro Hamada (BG)';
+  // Read user data from SharedPreferences (written by TeamService.joinTeam)
+  final prefs = await SharedPreferences.getInstance();
+  final String? userId = prefs.getString('user_id');
+  final String? teamId = prefs.getString('user_team_id');
+
+  // Guard: stop service if no team
+  if (userId == null || teamId == null) {
+    service.stopSelf();
+    return;
+  }
 
   Geolocator.getPositionStream(locationSettings: locationSettings)
       .listen((Position position) async {
@@ -102,13 +108,10 @@ void onStart(ServiceInstance service) async {
           .collection('members')
           .doc(userId)
           .set({
-        'name': userName,
-        'role': 'Pilgrim / You',
         'latitude': position.latitude,
         'longitude': position.longitude,
         'lastUpdated': FieldValue.serverTimestamp(),
         'isOnline': true,
-        'avatarUrl': 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(userName)}&background=random',
       }, SetOptions(merge: true));
       
       debugPrint("Background Location Pushed: ${position.latitude}, ${position.longitude}");
