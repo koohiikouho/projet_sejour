@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:projet_sejour/data/mock_itinerary_data.dart';
+import 'package:projet_sejour/data/local_repository.dart';
+import 'package:projet_sejour/models/activity.dart';
+import 'package:projet_sejour/models/trip.dart';
+import 'package:projet_sejour/models/itinerary_day.dart';
 import 'package:projet_sejour/widgets/itinerary/timeline_card.dart';
+import 'package:projet_sejour/services/sync_service.dart';
+import 'package:projet_sejour/pages/itinerary/activity_details_page.dart';
 
 class ItineraryOverviewPage extends StatefulWidget {
   const ItineraryOverviewPage({super.key});
@@ -10,23 +15,109 @@ class ItineraryOverviewPage extends StatefulWidget {
 }
 
 class _ItineraryOverviewPageState extends State<ItineraryOverviewPage> {
-  late List<Map<String, dynamic>> _itineraryItems;
+  List<Activity> _activities = [];
+  Trip? _currentTrip;
+  ItineraryDay? _currentDay;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _itineraryItems = MockItineraryData.detailedItinerary;
+    // Start by loading local cache, then sync in background
+    _loadActivities().then((_) => _refreshData());
+  }
+
+  Future<void> _loadActivities() async {
+    try {
+      final repository = LocalRepository();
+      
+      final trip = await repository.getFirstTrip();
+      if (trip != null) {
+        final days = await repository.getDaysForTrip(trip.tripId);
+        if (days.isNotEmpty) {
+          final currentDay = days.first;
+          final activities = await repository.getActivitiesForDay(currentDay.dayId);
+          if (mounted) {
+            setState(() {
+              _currentTrip = trip;
+              _currentDay = currentDay;
+              _activities = activities;
+              _isLoading = false;
+            });
+          }
+          return;
+        }
+      }
+      
+      if (mounted) {
+        setState(() {
+          _activities = [];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      debugPrint('Error loading activities: $e');
+    }
+  }
+
+  Future<void> _refreshData() async {
+    try {
+      final syncService = SyncService(LocalRepository());
+      await syncService.syncAllData();
+      await _loadActivities();
+    } catch (e) {
+      debugPrint('Error syncing data: $e');
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${monthNames[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  String _formatTime(DateTime time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  Map<String, dynamic> _mapActivityToCardData(Activity activity) {
+    final now = DateTime.now();
+    return {
+      'id': activity.activityId,
+      'time': _formatTime(activity.scheduledArrival),
+      'title': activity.siteName,
+      'location': activity.location,
+      'description': activity.description,
+      'duration': '${activity.duration.inMinutes} min',
+      'image': activity.photoUrl,
+      'isPast': activity.scheduledArrival.isBefore(now),
+      'isCurrent': activity.scheduledArrival.isBefore(now) && activity.scheduledDeparture.isAfter(now),
+      'category': activity.category,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
+    final int remainingCount = _activities.where((a) => a.scheduledArrival.isAfter(DateTime.now())).length;
+    final int totalCount = _activities.length;
+    final double progress = totalCount == 0 ? 0.0 : (totalCount - remainingCount) / totalCount;
+    final String percentage = '${(progress * 100).toInt()}%';
 
-          SliverAppBar(
+    return Scaffold(
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        color: colorScheme.primary,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+
+            SliverAppBar(
             expandedHeight: 120,
             pinned: true,
             flexibleSpace: FlexibleSpaceBar(
@@ -36,7 +127,7 @@ class _ItineraryOverviewPageState extends State<ItineraryOverviewPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Your Journey',
+                    _currentTrip?.tripName ?? 'Your Journey',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -44,7 +135,9 @@ class _ItineraryOverviewPageState extends State<ItineraryOverviewPage> {
                     ),
                   ),
                   Text(
-                    'Day 3 • Oct 12, 2026',
+                    _currentDay != null 
+                        ? 'Day ${_currentDay!.dayNumber} • ${_formatDate(_currentDay!.date)}'
+                        : 'No active days',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 24,
@@ -88,7 +181,7 @@ class _ItineraryOverviewPageState extends State<ItineraryOverviewPage> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      '4 items remaining today',
+                      '$remainingCount items remaining today',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         color: colorScheme.primary,
@@ -105,7 +198,7 @@ class _ItineraryOverviewPageState extends State<ItineraryOverviewPage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '33%',
+                      percentage,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: colorScheme.primary,
@@ -119,27 +212,50 @@ class _ItineraryOverviewPageState extends State<ItineraryOverviewPage> {
           ),
 
           // Timeline Cards
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                  final isLast = index == _itineraryItems.length - 1;
-                  return Column(
-                    children: [
-                      TimelineCard(
-                        item: _itineraryItems[index],
-                        index: index,
-                      ),
-                      if (!isLast) const SizedBox(height: 12),
-                    ],
-                  );
-                },
-                childCount: _itineraryItems.length,
+          if (_isLoading)
+            const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_activities.isEmpty)
+            const SliverFillRemaining(
+              child: Center(child: Text('No activities found for today. Swipe to refresh or check sync status.')),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                    final isLast = index == _activities.length - 1;
+                    final cardData = _mapActivityToCardData(_activities[index]);
+                    return Column(
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ActivityDetailsPage(
+                                  activity: _activities[index],
+                                ),
+                              ),
+                            );
+                          },
+                          child: TimelineCard(
+                            item: cardData,
+                            index: index,
+                          ),
+                        ),
+                        if (!isLast) const SizedBox(height: 12),
+                      ],
+                    );
+                  },
+                  childCount: _activities.length,
+                ),
               ),
             ),
-          ),
         ],
+      ),
       ),
     );
   }
