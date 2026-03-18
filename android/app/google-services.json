@@ -12,7 +12,44 @@
           "package_name": "com.example.projet_sejour"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "652607774222-38m6k02762fkm3ura4ao59esebhb0hnk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.projet_sejour",
+            "certificate_hash": "0b600146b93d173b599734824e7d557ea27838c5"
+          }
+        },
+        {
+          "client_id": "652607774222-7bi46u848189nhopjt9s424l02kgnjai.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.projet_sejour",
+            "certificate_hash": "f089823d43f530121fb8443162a87976cf8f17df"
+          }
+        },
+        {
+          "client_id": "652607774222-h3t3odcj19othf28n00ltsdm263ga881.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.projet_sejour",
+            "certificate_hash": "5440409063050baeb575e17f5f488d4ba8ef2ec8"
+          }
+        },
+        {
+          "client_id": "652607774222-ii39hnrcbpk8rl48a0uf27cjt7vtpeg7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.projet_sejour",
+            "certificate_hash": "d300ac549a0566608d9810f9ab291cdc87289f7d"
+          }
+        },
+        {
+          "client_id": "652607774222-pb841iubq2tbftar34gbij4heoer3c5l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyD-ecd1BVeVr8zeRTh0dysQBeEuC-fan2Q"
@@ -20,7 +57,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "652607774222-pb841iubq2tbftar34gbij4heoer3c5l.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "652607774222-52hv75o1enk21fg0p4ad5551q1jvta5n.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.projetSejour"
+              }
+            }
+          ]
         }
       }
     }
