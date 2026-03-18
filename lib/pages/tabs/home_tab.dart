@@ -1,52 +1,154 @@
 import 'package:flutter/material.dart';
+import 'package:projet_sejour/models/itinerary_day.dart';
 import 'package:projet_sejour/data/mock_data.dart';
 import 'package:projet_sejour/pages/announcements/all_announcements_page.dart';
 import 'package:projet_sejour/widgets/announcement_card.dart';
 import 'package:projet_sejour/widgets/timeline_item.dart';
+import 'package:projet_sejour/data/local_repository.dart';
+import 'package:projet_sejour/models/activity.dart';
+import 'package:projet_sejour/models/itinerary_item.dart';
 
-class HomeTab extends StatelessWidget {
+class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
 
   @override
+  State<HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<HomeTab> {
+  List<Activity> _todayActivities = [];
+  ItineraryDay? _currentDay;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTodayActivities();
+  }
+
+  Future<void> _loadTodayActivities() async {
+    try {
+      final repository = LocalRepository();
+      final trip = await repository.getFirstTrip();
+      if (trip != null) {
+        final days = await repository.getDaysForTrip(trip.tripId);
+        if (days.isNotEmpty) {
+          final currentDay = days.first;
+          final activities = await repository.getActivitiesForDay(currentDay.dayId);
+          if (mounted) {
+            setState(() {
+              _todayActivities = activities;
+              _currentDay = currentDay;
+              _isLoading = false;
+            });
+          }
+          return;
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      debugPrint('Error loading today activities: $e');
+    }
+  }
+
+  DateTime _toTripTimezone(DateTime date) {
+    return date.toUtc().add(const Duration(hours: 8));
+  }
+
+  String _formatTime(DateTime time) {
+    final tzTime = _toTripTimezone(time);
+    return '${tzTime.hour.toString().padLeft(2, '0')}:${tzTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _formatDate(DateTime date) {
+    final tzDate = _toTripTimezone(date);
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${monthNames[tzDate.month - 1]} ${tzDate.day}, ${tzDate.year}';
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 24),
-      children: [
-        // Announcements Section
-        Text(
-          'Announcements',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        _buildAnnouncementsSection(context),
-        const SizedBox(height: 32),
+    return RefreshIndicator(
+      onRefresh: _loadTodayActivities,
+      child: ListView(
+        padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 24),
+        children: [
+          // Announcements Section
+          Text(
+            'Announcements',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          _buildAnnouncementsSection(context),
+          const SizedBox(height: 32),
 
-        // Itinerary Section
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Today\'s Itinerary',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            Text(
-              'Oct 12, 2026',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.w600,
+          // Itinerary Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Today\'s Itinerary',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
+              Text(
+                _currentDay != null ? _formatDate(_currentDay!.date) : _formatDate(DateTime.now()),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
 
-        // Timeline
-        ...mockItinerary.map((item) => TimelineItem(item: item)),
-      ],
+          // Timeline
+          if (_isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (_todayActivities.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Text(
+                'No activities planned for today.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+            )
+          else
+            ..._todayActivities.map((activity) {
+              // Simulated "Now" on May 10 2026, 10:30 AM (UTC+8) -> 2:30 AM UTC
+              final mockDeviceNow = DateTime.utc(2026, 5, 10, 2, 30);
+              final tzNow = _toTripTimezone(mockDeviceNow);
+              
+              final tzArrival = _toTripTimezone(activity.scheduledArrival);
+              final tzDeparture = _toTripTimezone(activity.scheduledDeparture);
+              final isPast = tzArrival.isBefore(tzNow);
+              final isCurrent = tzArrival.isBefore(tzNow) && tzDeparture.isAfter(tzNow);
+
+              return TimelineItem(
+                item: ItineraryItem(
+                  time: _formatTime(activity.scheduledArrival),
+                  title: activity.siteName,
+                  location: activity.location,
+                  isPast: isPast,
+                  isCurrent: isCurrent,
+                ),
+              );
+            }),
+        ],
+      ),
     );
   }
 

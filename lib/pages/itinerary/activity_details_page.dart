@@ -6,13 +6,19 @@ class ActivityDetailsPage extends StatelessWidget {
 
   const ActivityDetailsPage({super.key, required this.activity});
 
+  DateTime _toTripTimezone(DateTime date) {
+    return date.toUtc().add(const Duration(hours: 8));
+  }
+
   String _formatTime(DateTime time) {
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    final tzTime = _toTripTimezone(time);
+    return '${tzTime.hour.toString().padLeft(2, '0')}:${tzTime.minute.toString().padLeft(2, '0')}';
   }
 
   String _formatDate(DateTime date) {
+    final tzDate = _toTripTimezone(date);
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return '${monthNames[date.month - 1]} ${date.day}, ${date.year}';
+    return '${monthNames[tzDate.month - 1]} ${tzDate.day}, ${tzDate.year}';
   }
 
   @override
@@ -33,7 +39,9 @@ class ActivityDetailsPage extends StatelessWidget {
               Image.network(
                 activity.photoUrl,
                 height: 250,
+                width: double.infinity,
                 fit: BoxFit.cover,
+                cacheWidth: 800, // Optimize memory and loading speed for high-res images
                 errorBuilder: (context, error, stackTrace) => Container(
                   height: 250,
                   color: Colors.grey[200],

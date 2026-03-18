@@ -104,9 +104,13 @@ class TimelineItem extends StatelessWidget {
                         color: Theme.of(context).textTheme.bodyMedium?.color,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        item.location,
-                        style: Theme.of(context).textTheme.bodyMedium,
+                      Expanded(
+                        child: Text(
+                          item.location,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
