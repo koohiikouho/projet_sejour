@@ -3,6 +3,7 @@ import 'package:projet_sejour/services/auth_service.dart';
 import 'package:projet_sejour/pages/badges_page.dart';
 import 'package:projet_sejour/pages/chatbot_page.dart';
 import 'package:projet_sejour/pages/login_page.dart';
+import 'package:projet_sejour/pages/checklist_page.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -131,6 +132,18 @@ class AppDrawer extends StatelessWidget {
                   onTap: () {
                     Navigator.pop(context);
                     // Navigate to Settings
+                  },
+                ),
+                _buildGridTile(
+                  context: context,
+                  icon: Icons.checklist_rtl_outlined,
+                  title: 'Checklists',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ChecklistPage()),
+                    );
                   },
                 ),
                 _buildGridTile(
