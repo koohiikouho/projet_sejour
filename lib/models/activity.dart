@@ -14,6 +14,7 @@ class Activity {
   final DateTime scheduledDeparture;
   final List<String> whatToBring;
   final DateTime lastUpdatedAt;
+  final bool isCompleted;
 
   Activity({
     required this.activityId,
@@ -28,6 +29,7 @@ class Activity {
     required this.scheduledDeparture,
     required this.whatToBring,
     required this.lastUpdatedAt,
+    this.isCompleted = false,
   });
 
   // Calculate and return the duration
@@ -63,6 +65,7 @@ class Activity {
       scheduledDeparture: DateTime.parse(map['scheduledDeparture'] as String),
       whatToBring: List<String>.from(json.decode(map['whatToBring'] as String)),
       lastUpdatedAt: DateTime.parse(map['lastUpdatedAt'] as String),
+      isCompleted: (map['isCompleted'] as int?) == 1,
     );
   }
 
@@ -81,6 +84,7 @@ class Activity {
       // Store String array gracefully as localized JSON string
       'whatToBring': json.encode(whatToBring), 
       'lastUpdatedAt': lastUpdatedAt.toIso8601String(),
+      'isCompleted': isCompleted ? 1 : 0,
     };
   }
 }

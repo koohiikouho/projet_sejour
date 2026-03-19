@@ -32,6 +32,7 @@ class TimelineCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final isCurrent = item['isCurrent'] as bool;
     final isPast = item['isPast'] as bool;
+    final isCompleted = item['isCompleted'] as bool? ?? false;
     final categoryIcon = _getCategoryIcon(item['category'] ?? '');
 
     return Card(
@@ -111,9 +112,9 @@ class TimelineCard extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: isCurrent ? FontWeight.bold : FontWeight.w600,
                             fontSize: 16,
-                            decoration: isPast ? TextDecoration.lineThrough : null,
+                            decoration: isCompleted ? TextDecoration.lineThrough : null,
                             decorationColor: Colors.grey,
-                            color: isPast ? Colors.grey : null,
+                            color: isPast || isCompleted ? Colors.grey : null,
                           ),
                         ),
                       ),
@@ -151,8 +152,8 @@ class TimelineCard extends StatelessWidget {
                           item['location'],
                           style: TextStyle(
                             fontSize: 13,
-                            color: isPast ? Colors.grey : Colors.grey[700],
-                            decoration: isPast ? TextDecoration.lineThrough : null,
+                            color: isPast || isCompleted ? Colors.grey : Colors.grey[700],
+                            decoration: isCompleted ? TextDecoration.lineThrough : null,
                             decorationColor: Colors.grey,
                           ),
                           maxLines: 1,

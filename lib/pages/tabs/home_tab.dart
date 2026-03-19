@@ -144,6 +144,7 @@ class _HomeTabState extends State<HomeTab> {
                   location: activity.location,
                   isPast: isPast,
                   isCurrent: isCurrent,
+                  isCompleted: activity.isCompleted,
                 ),
               );
             }),

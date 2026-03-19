@@ -113,6 +113,7 @@ class SyncService {
                     ),
                     whatToBring: _parseStringList(activityData['whatToBring']),
                     lastUpdatedAt: _parseDate(activityData['lastUpdatedAt']),
+                    isCompleted: activityData['isCompleted'] == true,
                   );
                   await _localRepository.insertOrUpdateActivity(activity);
                 } catch (e) {

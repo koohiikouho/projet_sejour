@@ -136,6 +136,7 @@ class _ItineraryOverviewPageState extends State<ItineraryOverviewPage> {
       'image': activity.photoUrl,
       'isPast': tzArrival.isBefore(tzNow),
       'isCurrent': tzArrival.isBefore(tzNow) && tzDeparture.isAfter(tzNow),
+      'isCompleted': activity.isCompleted,
       'category': activity.category,
     };
   }
@@ -145,7 +146,7 @@ class _ItineraryOverviewPageState extends State<ItineraryOverviewPage> {
     final colorScheme = Theme.of(context).colorScheme;
 
     final int remainingCount = _activities
-        .where((a) => a.scheduledArrival.isAfter(DateTime.now()))
+        .where((a) => !a.isCompleted)
         .length;
     final int totalCount = _activities.length;
     final double progress = totalCount == 0
