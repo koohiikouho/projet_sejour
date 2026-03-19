@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:projet_sejour/models/activity.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ActivityDetailsPage extends StatelessWidget {
   final Activity activity;
@@ -36,13 +37,23 @@ class ActivityDetailsPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (activity.photoUrl.isNotEmpty)
-              Image.network(
-                activity.photoUrl,
+              CachedNetworkImage(
+                imageUrl: activity.photoUrl,
                 height: 250,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                cacheWidth: 800, // Optimize memory and loading speed for high-res images
-                errorBuilder: (context, error, stackTrace) => Container(
+                maxWidthDiskCache: 800, // Optimize disk cache resolution
+                memCacheWidth: 800, // Optimize memory and loading speed for high-res images
+                placeholder: (context, url) => Container(
+                  height: 250,
+                  color: Colors.grey[200],
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
                   height: 250,
                   color: Colors.grey[200],
                   child: const Center(

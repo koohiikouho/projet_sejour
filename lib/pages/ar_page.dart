@@ -1,6 +1,7 @@
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:projet_sejour/services/search_api_service.dart';
 
@@ -414,7 +415,7 @@ class _ARPageState extends State<ARPage>
                           borderRadius: BorderRadius.circular(12),
                           image: match['thumbnail'] != null
                               ? DecorationImage(
-                                  image: NetworkImage(match['thumbnail']),
+                                  image: CachedNetworkImageProvider(match['thumbnail']),
                                   fit: BoxFit.cover,
                                 )
                               : null,

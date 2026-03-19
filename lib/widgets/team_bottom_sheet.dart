@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:projet_sejour/models/team_member_model.dart';
 import 'package:projet_sejour/services/notification_service.dart';
@@ -184,7 +185,7 @@ class _TeamBottomSheetState extends State<TeamBottomSheet> {
         children: [
           CircleAvatar(
             radius: 24,
-            backgroundImage: NetworkImage(avatarUrl),
+            backgroundImage: CachedNetworkImageProvider(avatarUrl),
           ),
           if (isActive)
             Positioned(
