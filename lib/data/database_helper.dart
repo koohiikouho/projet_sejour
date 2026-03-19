@@ -19,7 +19,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -74,6 +74,7 @@ class DatabaseHelper {
         scheduledDeparture TEXT NOT NULL,
         whatToBring TEXT,
         lastUpdatedAt TEXT NOT NULL,
+        isCompleted INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (dayId) REFERENCES itineraryDays (dayId) ON DELETE CASCADE
       )
     ''');

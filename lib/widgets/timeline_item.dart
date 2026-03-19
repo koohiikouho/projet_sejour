@@ -93,6 +93,8 @@ class TimelineItem extends StatelessWidget {
                               context,
                             ).colorScheme.onSurface.withValues(alpha: 0.6)
                           : null,
+                      decoration: item.isCompleted ? TextDecoration.lineThrough : null,
+                      decorationColor: Colors.grey,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -104,9 +106,16 @@ class TimelineItem extends StatelessWidget {
                         color: Theme.of(context).textTheme.bodyMedium?.color,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        item.location,
-                        style: Theme.of(context).textTheme.bodyMedium,
+                      Expanded(
+                        child: Text(
+                          item.location,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            decoration: item.isCompleted ? TextDecoration.lineThrough : null,
+                            decorationColor: Colors.grey,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),

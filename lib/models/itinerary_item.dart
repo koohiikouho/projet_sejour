@@ -4,6 +4,7 @@ class ItineraryItem {
   final String location;
   final bool isPast;
   final bool isCurrent;
+  final bool isCompleted;
 
   ItineraryItem({
     required this.time,
@@ -11,5 +12,6 @@ class ItineraryItem {
     required this.location,
     this.isPast = false,
     this.isCurrent = false,
+    this.isCompleted = false,
   });
 }

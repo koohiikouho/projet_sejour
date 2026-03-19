@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ProfileHeader extends StatelessWidget {
   const ProfileHeader({super.key});
@@ -15,10 +16,20 @@ class ProfileHeader extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             // Cover Image - Hardcoded
-            Image.network(
-              'https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+            CachedNetworkImage(
+              imageUrl: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
+              maxWidthDiskCache: 800,
+              memCacheWidth: 800,
+              placeholder: (context, url) => Container(
+                color: colorScheme.primary.withValues(alpha: 0.1),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ),
+              errorWidget: (context, url, error) {
                 return Container(
                   color: colorScheme.primary.withValues(alpha: 0.3),
                   child: Center(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:projet_sejour/services/auth_service.dart';
 import 'package:projet_sejour/pages/badges_page.dart';
 import 'package:projet_sejour/pages/chatbot_page.dart';
@@ -66,7 +67,7 @@ class AppDrawer extends StatelessWidget {
                       child: CircleAvatar(
                         radius: 36,
                         backgroundImage: profilePic != null && profilePic.isNotEmpty
-                            ? NetworkImage(profilePic)
+                            ? CachedNetworkImageProvider(profilePic)
                             : const AssetImage('assets/images/BigHero.jpg') as ImageProvider,
                       ),
                     ),
