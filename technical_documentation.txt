@@ -1,160 +1,132 @@
-TITLE: Technical Documentation: Sojourn Compass
-=========================================
+Technical Documentation Outline: Sojourn Compass Mobile App
+===========================================================
 
 1. Overview of the Project
 --------------------------
-1.1. Purpose
-Sojourn Compass is a specialized, mobile-first travel companion application built to serve the unique needs of coordinated group travel—such as academic study abroad programs, religious pilgrimages, and large-scale managed tourism. Traditional travel applications focus on individual bookings or single-trip chronologies. Sojourn Compass shifts the paradigm by focusing on group cohesion, offline resilience, and interactive educational components.
+Purpose:
+The Sojourn Compass Mobile Application aims to address critical gaps in coordination, communication, and engagement during organized Lasallian pilgrimages. It serves as a digital ecosystem designed to replace the current fragmented system of rapidly changing and outdated Google Sheet itineraries, verbal instructions, and manual attendance tracking with a centralized, user-friendly mobile platform. 
 
-1.2. Objectives
-- Decentralized Security: To replace fragmented tools (WhatsApp, physical passports, printed PDFs) with a secure ecosystem where users can store critical documents (visas, IDs) in an encrypted Vault and dynamically regroup if lost via QR-code based Team Syncing.
-- Offline-First Architecture: International travel often involves cellular dead zones or expensive roaming charges. The core objective is to ensure that the primary Itinerary and map routing remain entirely functional without an active internet connection through intelligent SQLite caching.
-- Contextual Education: To integrate an AI-powered conversational agent that utilizes Retrieval-Augmented Generation (RAG) to act as a localized tour guide, answering user queries based on their current location and daily schedule.
-- Geospatial Engagement: Implementing Mapbox-driven tracking to visually route daily itineraries and utilize background geolocation isolating to trigger location-based 'Badges' and achievements.
+Objectives:
+- Information Dissemination: Unify and centralize all announcements, schedules, and alerts to eliminate the chaos of scattered Viber and Messenger chats.
+- Coordination & Safety: Provide real-time GPS group tracking and automated smart checklists to ensure elder participants do not get lost or forget essential documents (like the Pilgrim's Passport).
+- Experience Enhancement: Enhance the spiritual and educational experience through gamification (Digital Badges) and Augmented Reality (AR) tools that overcome language barriers.
+- Feedback loop: Establish a real-time, contextually triggered feedback loop between pilgrims and coordinators to replace ineffective post-trip surveys.
 
-1.3. Expected Outcomes
-By centralizing scheduling, socialization, emergency alerting, and journaling into a single Flutter application, Sojourn Compass aims to reduce the logistical burden on Group Leaders while enriching the cultural extraction for the everyday traveler.
+Expected Outcomes:
+The implementation of Sojourn Compass will lead to a measurable reduction in coordination errors, significantly improved participant satisfaction and accessibility, and the creation of a unified, historical database containing multimedia reflection journals and documentation for future pilgrimage programs.
 
 
-2. User-Interface and Interaction Guidelines
---------------------------------------------
-*(Note: Please insert final application screenshots in this section for the final report. Below are the functional descriptions for each screen.)*
-
-2.1. The Main Dashboard (Tabs)
-The application opens to a bottom-navigated dashboard featuring three primary tabs:
-- The Home Tab: A high-level overview displaying the current date, weather integration via standard API services, an announcement broadcast banner from administrators, and quick-action chips.
-- The Itinerary Tab: A scrolling, chronological timeline of the day's events. Users see color-coded cards detailing arrival times, mobility ratings, and attached reading materials. Completed events are grayed out.
-- The Interactive Map Tab: A full-screen Mapbox rendering plotting two distinct data types: (A) Purple markers mapping out the real-world locations of today's itinerary schedule via live forward geocoding, and (B) Red avatar markers showing the real-time physical locations of active team members. 
-
-2.2. The Team Management Bottom Sheet
-Accessible by pulling up the modal on the Map page. If a user is unaffiliated, they are prompted to either "Create a Team" or "Join via QR". Tapping "Join" activates the device camera (`mobile_scanner`) to read a 6-digit alphanumeric code. Once assigned to a team, the user sees a list of online members natively. If the user is the 'Team Leader', they are granted a prominent red "Ping Team" button which bypasses standard app flow to push critical emergency alerts to all teammates.
-
-2.3. The Private Journal and Secure Vault
-Accessible via the overarching App Drawer. 
-- The Journal allows users to write text, record audio memos, or attach Cloudinary-hosted photos. It includes an AI-assistance button that evaluates the entry and provides historical or spiritual reflection context.
-- The Vault displays a tabbed interface splitting 'My Documents' (private Firestore rules) from 'Shared Materials' (global read rules). Users invoke a native file picker to securely upload PDFs and JPEGs.
+2. User-Interface
+-----------------
+[DEVELOPER NOTE: Insert application screenshots here specifically demonstrating:]
+- The Login Screen (Google-based Authenticated Gateway).
+- The Live Itinerary Tab (Card-based daily schedule displaying site names, timings, and photos).
+- The Announcement Board (Reverse-chronological feed with pinned priority messages).
+- The Map & Team Tracker Tab (Mapbox display with real-time teammate locations and Itinerary waypoints).
+- The Digital Badge Dashboard and the Reflection Journal input screen.
 
 
 3. Developer Documentation
 --------------------------
 
 3.1. Architecture Overview
-Sojourn Compass is built on a Service-Oriented, Offline-First Architecture pattern.
+The Sojourn Compass application is built on an Offline-First, Service-Oriented Architecture (SOA). Given the variable nature of European public internet access, the system relies on a local SQLite cache as its primary data layer, synchronized asynchronously with a Firebase Cloud Firestore backend. 
 
-[System Flow Diagram - Conceptual]
-[ SQLite Local Cache ] <--(SyncService)--> [ Cloud Firestore / Firebase Auth ]
-       |                                          |
-[ Flutter UI Views ] <--(LocationSync)--> [ Hardware GPS / Mapbox ]
-       |                                          |
-[ ChatbotService ]   <--(LangChain)-----> [ Gemini LLM / SerpApi ]
+[System Architecture Diagram]
+(Client Device) -> Flutter UI Components
+       |
+       v
+(Services Layer) -> BackgroundLocationService, SyncService, SearchApiService
+       |
+       +----> (Local Storage) -> SQLite Repository (Itinerary, Badges)
+       |
+       +----> (Cloud Backend) -> Firestore (Teams, Announcements, Vault) & Firebase Auth
 
-
-- Client-Side: The UI is completely decoupled from network calls. All list views and rendering pipelines pull their state from `lib/data/local_repository.dart` (SQLite). 
-- Synchronization Layer: `SyncService` operates on a background polling mechanism. When internet is detected, it pulls diffs from Firestore and upserts them into SQLite, emitting state changes to the UI layer. This guarantees a sub-100ms UI render time regardless of network latency.
-- Event-Driven Geolocation: The `BackgroundLocationService` operates on an isolated thread. It tracks coordinates regardless of app state (foreground/background), firing telemetry directly to Firestore `teams/{id}/members`, which triggers downstream Cloud Messaging alerts.
-- Retrieval-Augmented Generation (RAG): Queries made in the Chatbot are first serialized alongside the user's current SQLite Itinerary context before being packaged to the LLM.
+Use-Case Diagram Descriptions (Derived from Project BPMNs):
+1. Login Process: Users open the app and trigger an authentication check. Unauthenticated users are served the login prompt, verifying credentials against the backend. Success yields a token, distinguishing standard pilgrims from coordinators.
+2. Group Tracking Process: Upon opening the Group Tracker, background geolocation services collect real-time coordinates. The backend aggregates this point data and renders it onto the map. Team leaders use this to conduct digital headcounts and locate wandering members.
+3. Daily Itinerary Process: Users select the itinerary tab, pulling offline data from the local database. If participants spot outdated information, they can submit an incorrect information report (Feedback loop) which coordinators receive instantly to issue updates.
+4. Announcement Retrieval: Dual-layer approach where the app polls the backend for the latest published messages, stores them in the local database, and renders them. This guarantees access during cellular blackouts on foreign buses.
+5. AR Process: Users invoke the camera tab, point the device at a historical artifact, and the system performs tracking and recognition to overlay translated historical contexts directly onto the screen.
 
 
 3.2. Codebase Overview
-The proprietary logic resides entirely within the `lib/` directory, segmented by architectural responsibility:
+The proprietary logic is written in Dart using the Flutter framework, structured to enforce a clean separation of concerns:
 
-- `/lib/models/`: Pure Dart classes representing raw system data. 
-  - `Activity.dart`: Defines schedule block parsing logic. Contains methods like `toSqlite()` and `fromSqlite()` to map strongly typed variables to SQL text columns. Maps JSON arrays (like `whatToBring`) stringified internally.
-  - `TeamMember.dart`: Represents the real-time coordinate data of an allied traveler.
-  
-- `/lib/data/`: Hardware and Local Database persistence.
-  - `local_repository.dart`: A Singleton class managing the raw SQLite connection. Defines the `onCreate` schema migrations and handles all local CRUD operations.
-
-- `/lib/services/`: The Brain of the application containing all external integrations.
-  - `LocationSyncService.dart`: Orchestrates the dynamic joining of groups via QR code schemas. Listens to Firestore `pings/` subcollections and delegates standard notifications to `NotificationService`.
-  - `JournalService.dart` & `SearchApiService.dart`: Bridges local file paths to remote CDN storage URLs using Cloudinary fallback mechanisms over Firebase Storage to bypass native tier limitations. 
-  - `BadgeService.dart`: Computes Haversine distance formulas between the user's live coordinates and static geographic points of interest to award gamified milestones.
-
-- `/lib/pages/` and `/lib/widgets/`: The declarative UI layer executing standard Flutter Material 3 design patterns. Highly customized widgets like `AppDrawer` and `TeamBottomSheet` abstract complex stream builders into pure UI functions.
+- `/lib/models/`: Contains Data Transfer Objects (DTOs) like `Activity`, `TeamMember`, and `JournalEntry`. These classes handle the serialization/deserialization between SQLite mapping arrays and Firebase JSON documents.
+- `/lib/data/`: Houses `local_repository.dart`, the core SQLite execution engine managing tables for Trips, Itinerary Days, and Activities.
+- `/lib/services/`: Contains the core business logic controllers.
+  - `LocationSyncService.dart`: Manages live telemetry, handles QR code payload parsing for joining dynamic groups, and listens/pushes real-time Pings to the Firestore database.
+  - `SyncService.dart`: The background polling agent that fetches Firestore records and updates the SQLite repository.
+  - `BadgeService.dart`: Computes geographic proximity using Haversine formulas against the user's location stream to award gamified milestones.
+  - `JournalService.dart` & `VaultService.dart`: Manages file I/O operations and integrates with Cloudinary and Firebase Storage for uploading secure documents and media.
+- `/lib/pages/`: Contains stateful view screens governing individual features (e.g., `MapPage`, `ItineraryOverviewPage`, `GuideRepositoryPage`).
+- `/lib/widgets/`: Highly customized components meant for reuse, such as the `TeamBottomSheet` (handling QR generation/scanning) and `TimelineCard`.
 
 
-3.3. Database Schema (Data Dictionary)
-The application runs on a dual-database model.
+3.3. Database Schema
+Sojourn Compass relies on a robust Data Dictionary bridging both a Local Relational Database and a Remote NoSQL structure.
 
-3.3.1. SQLite Relational Schema (Local Cache & Offline Engine)
-This database manages all structurally stable data required to render the app offline.
+[ Local SQLite Schema ] (Offline Cache)
+* Table: trips
+  - tripId (TEXT, Primary Key)
+  - tripName (TEXT)
+  - startDate (TEXT) / endDate (TEXT)
+  - destinations (TEXT)
+  - status (TEXT)
 
-Table: `trips`
-- `tripId` (TEXT, Primary Key): Unique GUID for the journey.
-- `tripName` (TEXT): Display name (e.g., "Parisian Pilgrimage").
-- `startDate` (TEXT): ISO 8601 serialized datetime.
-- `endDate` (TEXT): ISO 8601 serialized datetime.
-- `destinations` (TEXT): Comma-separated locales.
-- `status` (TEXT): Active, Upcoming, or Completed.
-- `lastUpdatedAt` (TEXT): Critical for diff-checking against the cloud.
+* Table: itinerary_days
+  - dayId (TEXT, Primary Key)
+  - tripId (TEXT, Foreign Key)
+  - date (TEXT)
+  - dayNumber (INTEGER)
+  - theme (TEXT)
 
-Table: `itinerary_days`
-- `dayId` (TEXT, Primary Key): Unique GUID.
-- `tripId` (TEXT, Foreign Key): Maps to `trips(tripId)`.
-- `date` (TEXT): ISO 8601 serialization for timeline headers.
-- `dayNumber` (INTEGER): Index referencing ordinal order of travel.
-- `theme` (TEXT): Thematic goal of the day (e.g., "Gothic Architectures").
+* Table: activities
+  - activityId (TEXT, Primary Key)
+  - dayId (TEXT, Foreign Key)
+  - siteName (TEXT)
+  - description (TEXT)
+  - category (TEXT)
+  - location (TEXT) -> Used by Mapbox geocoding for offline routing.
+  - scheduledArrival (TEXT) / scheduledDeparture (TEXT)
+  - whatToBring (TEXT) -> Serialized JSON array for the Smart Checklist.
 
-Table: `activities`
-- `activityId` (TEXT, Primary Key): Unique GUID.
-- `dayId` (TEXT, Foreign Key): Maps to `itinerary_days(dayId)`.
-- `siteName` (TEXT): Title of the specific event.
-- `description` (TEXT): Paragraph description.
-- `location` (TEXT): Address string. Forward-geocoded by Mapbox into coordinates at runtime.
-- `scheduledArrival` (TEXT) / `scheduledDeparture` (TEXT): UTC datetime barriers.
-- `whatToBring` (TEXT): A JSON-serialized array of required equipment strings.
+[ Cloud Firestore NoSQL Schema ] (Real-Time Subsystems)
+* Collection: users
+  - Document ID: Firebase Auth UID
+  - teamId (String): Reference to active ad-hoc group.
+  - isTeamLeader (Boolean): Grants admin privileges for group tracking.
 
+* Collection: teams
+  - Document ID: Auto-generated string
+  - name (String): Group title.
+  - leaderId (String): Creator UID.
+  - joinCode (String): 6-digit alphanumeric key for UI QR generation.
+  > Subcollection: members (Doc ID = User UID)
+    - name (String), role (String)
+    - latitude (Double), longitude (Double)
+    - isOnline (Boolean)
+  > Subcollection: pings (Doc ID = Ping ID)
+    - message (String)
+    - timestamp (Timestamp)
 
-3.3.2. Cloud Firestore Schema (Real-time NoSQL Engine)
-Used for highly volatile, ad-hoc data generated passively by users interacting with each other.
+* Collection: journal_entries
+  - id (String)
+  - title (String), content (String)
+  - mediaUrl (String) -> Cloudinary Asset link.
+  - location (String)
+  - entryDate (Timestamp)
 
-Collection: `users`
-- Document ID: `{Firebase Auth UID}`
-  - `email` (String): Authorized email.
-  - `teamId` (String, Nullable): References the `teams` collection if the user has successfully scanned a QR join code.
-  - `isTeamLeader` (Boolean): Controls UI rendering of administrative ping controls.
+* Collection: vault_documents
+  - id (String)
+  - userId (String) -> Restricts visibility to user only.
+  - title (String)
+  - fileUrl (String) -> Firebase Storage URI link.
+  - category (String) -> 'Visas', 'Passports', etc.
 
-Collection: `teams`
-- Document ID: `{Auto-generated ID}`
-  - `name` (String): Display name of the squad.
-  - `leaderId` (String): ID of the creator.
-  - `joinCode` (String): Secure 6-character alphanumeric sequence generated deterministically for QR rendering.
-  - `createdAt` (Timestamp)
-  
-  > Subcollection: `members`
-  > Document ID: `{Firebase Auth UID of member}`
-    - `name` (String)
-    - `role` (String): Descriptive tag (e.g., "Member", "Leader (You)").
-    - `latitude` (Number): Float-point GPS coordinates updated dynamically by `BackgroundLocationService`.
-    - `longitude` (Number): Float-point GPS coordinates.
-    - `isOnline` (Boolean): Determines UI presence state.
-    - `avatarUrl` (String): CDN path to profile icon.
-
-  > Subcollection: `pings`
-  > Document ID: `{Auto-generated ID}`
-    - `timestamp` (Timestamp): Creation time. Used by client clients to ignore historical pings and only alert on fresh inserts.
-    - `message` (String): Push-notification body text.
-
-Collection: `journal_entries`
-- Document ID: `{Auto-generated ID}`
-  - `title` (String): User's summary of the entry.
-  - `content` (String): Long-form text reflection.
-  - `mediaUrl` (String): Resolved CDN link handling both Cloudinary JPEGs and recorded Audio MP3s.
-  - `location` (String): Georeferenced placename tagging.
-  - `entryDate` (Timestamp): Historical timeline sorting token.
-
-Collection: `vault_documents`
-- Document ID: `{Auto-generated ID}`
-  - `userId` (String): Ensures row-level security permissions via Firebase Rules.
-  - `title` (String): Filename visualization.
-  - `fileUrl` (String): Direct link to Firebase Storage Bucket containing the binary blob.
-  - `category` (String): Enum (Visas, Identifications, Health, Flight Tickets).
-  - `isVerified` (Boolean): Administrative flag denoting document compliance.
-
-Collection: `activity_guides`
-- Document ID: `{Auto-generated ID}`
-  - `title` (String): Knowledge base header.
-  - `location` (String): Geographic categorization (e.g., "Paris").
-  - `category` (String): Type of content (Logistical, Phrasebook, Historical).
-  - `content` (String): Long-form educational text downloaded sequentially for offline caching.
-  - `mediaUrls` (Array of Strings): Pointers to associated reference material or lecture audio tracks.
+* Collection: activity_guides
+  - id (String)
+  - title (String), content (String)
+  - category (String), location (String)
+  - mediaUrls (Array) -> Links to audio lectures.
