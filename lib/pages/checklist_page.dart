@@ -74,7 +74,7 @@ class _ChecklistPageState extends State<ChecklistPage> {
         _isLoading = false;
       });
     } catch (e) {
-      print('ChecklistPage Error: $e');
+      debugPrint('ChecklistPage Error: $e');
       setState(() {
         _errorMessage = e.toString();
         _isLoading = false;
@@ -133,9 +133,16 @@ class _ChecklistPageState extends State<ChecklistPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Travel Checklist'),
-        centerTitle: true,
-        backgroundColor: colorScheme.primaryContainer,
+        backgroundColor: Colors.white,
+        elevation: 1,
+        title: Text(
+          'Travel Checklist',
+          style: TextStyle(
+            color: colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        iconTheme: IconThemeData(color: colorScheme.primary),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

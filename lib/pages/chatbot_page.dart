@@ -51,9 +51,16 @@ class _ChatbotPageState extends State<ChatbotPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Lumen AI Assistant'),
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
+        backgroundColor: Colors.white,
+        elevation: 1,
+        title: Text(
+          'Lumen AI Assistant',
+          style: TextStyle(
+            color: colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        iconTheme: IconThemeData(color: colorScheme.primary),
       ),
       body: Column(
         children: [

@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ProfileInfoCard extends StatelessWidget {
-  const ProfileInfoCard({super.key});
+  final String? name;
+  final String? profilePic;
+
+  const ProfileInfoCard({
+    super.key,
+    this.name,
+    this.profilePic,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +34,11 @@ class ProfileInfoCard extends StatelessWidget {
               ),
             ],
           ),
-          child: const CircleAvatar(
+          child: CircleAvatar(
             radius: 50,
-            backgroundImage: AssetImage('assets/images/BigHero.jpg'),
+            backgroundImage: profilePic != null && profilePic!.isNotEmpty
+                ? CachedNetworkImageProvider(profilePic!)
+                : NetworkImage('https://ui-avatars.com/api/?name=${Uri.encodeComponent(name ?? 'User')}&background=random') as ImageProvider,
           ),
         ),
         const SizedBox(width: 16),
@@ -38,9 +48,9 @@ class ProfileInfoCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Baymax',
-                style: TextStyle(
+              Text(
+                name ?? 'User',
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
@@ -70,4 +80,4 @@ class ProfileInfoCard extends StatelessWidget {
       ],
     );
   }
-}
+}

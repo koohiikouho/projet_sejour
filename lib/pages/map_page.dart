@@ -8,6 +8,9 @@ import 'package:projet_sejour/widgets/team_bottom_sheet.dart';
 import 'package:projet_sejour/models/team_member_model.dart';
 import 'package:projet_sejour/services/location_sync_service.dart';
 import 'package:projet_sejour/services/background_location_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:projet_sejour/data/local_repository.dart';
+import 'package:geocoding/geocoding.dart' as geocoder;
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -24,20 +27,21 @@ class _MapPageState extends State<MapPage> {
   bool is3DMode = false;
 
   final LocationSyncService _syncService = LocationSyncService();
-  late Stream<List<TeamMember>> _teamStream;
   StreamSubscription<List<TeamMember>>? _teamSubscription;
+  StreamSubscription<Map<String, dynamic>?>? _userTeamSubscription;
+  String? _currentTeamId;
 
 
   @override
   void initState() {
     super.initState();
-    _teamStream = _syncService.getTeamLocations();
     _determinePosition();
   }
 
   @override
   void dispose() {
     _teamSubscription?.cancel();
+    _userTeamSubscription?.cancel();
     _syncService.stopTrackingLocation(); // Keep for safety if any foreground streams were left
     BackgroundLocationService.stop();
     super.dispose();
@@ -111,7 +115,9 @@ class _MapPageState extends State<MapPage> {
       // continue accessing the position of the device.
       // We add a timeout to prevent the app from freezing if the GPS hardware is stuck.
       currentPosition = await geo.Geolocator.getCurrentPosition(
-        timeLimit: const Duration(seconds: 5),
+        locationSettings: const geo.LocationSettings(
+          timeLimit: Duration(seconds: 5),
+        ),
       ).catchError((e) {
         // Fallback to last known position if active GPS timeout
         return geo.Geolocator.getLastKnownPosition().then((pos) {
@@ -136,6 +142,7 @@ class _MapPageState extends State<MapPage> {
   }
 
   CircleAnnotationManager? _circleAnnotationManager;
+  CircleAnnotationManager? _itineraryAnnotationManager;
 
   Future<void> _onMapCreated(MapboxMap mapboxMap) async {
     this.mapboxMap = mapboxMap;
@@ -152,13 +159,40 @@ class _MapPageState extends State<MapPage> {
 
     // Setup Circle Annotations as a reliable fallback for Team Members
     _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
+    _itineraryAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
     
-    _teamSubscription = _teamStream.listen((members) {
-      _updateMapMarkers(members);
+    _startListeningToTeamUpdates();
+    _loadTodayItinerary();
+  }
+
+  void _startListeningToTeamUpdates() {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? 'test_user';
+    _userTeamSubscription = _syncService.streamUserTeamData(userId).listen((userData) {
+      final teamId = userData?['teamId'] as String?;
+      
+      // If team assignment changed
+      if (teamId != _currentTeamId) {
+        _currentTeamId = teamId;
+        _teamSubscription?.cancel();
+        
+        if (teamId == null) {
+          // Left team, sweep the board
+          _circleAnnotationManager?.deleteAll();
+          _syncService.stopTrackingLocation();
+        } else {
+          // Joined team, rebuild streams
+          _teamSubscription = _syncService.getTeamLocations(teamId).listen((members) {
+            _updateMapMarkers(members, userId);
+          });
+          final name = FirebaseAuth.instance.currentUser?.displayName ?? 'Traveler';
+          final isLeader = userData?['isTeamLeader'] as bool? ?? false;
+          _syncService.startTrackingLocation(userId: userId, teamId: teamId, name: name, role: isLeader ? 'Leader' : 'Member');
+        }
+      }
     });
   }
 
-  void _updateMapMarkers(List<TeamMember> members) async {
+  void _updateMapMarkers(List<TeamMember> members, String currentUserId) async {
     if (_circleAnnotationManager == null) return;
     
     // Clear old markers completely and redraw
@@ -167,20 +201,58 @@ class _MapPageState extends State<MapPage> {
     // Filter out offline members AND filter out our own user ID
     // so we don't draw a red circle under our own blue location puck
     final List<CircleAnnotationOptions> newAnnotations = members
-        .where((m) => m.isOnline && m.id != 'user_123')
+        .where((m) => m.isOnline && m.id != currentUserId)
         .map((member) {
       // Create a solid red circle marker for every online member
       return CircleAnnotationOptions(
         geometry: Point(coordinates: Position(member.longitude, member.latitude)),
-        circleColor: Colors.red.value,
+        circleColor: Colors.red.toARGB32(),
         circleRadius: 8.0,
-        circleStrokeColor: Colors.white.value,
+        circleStrokeColor: Colors.white.toARGB32(),
         circleStrokeWidth: 2.0,
       );
     }).toList();
 
     if (newAnnotations.isNotEmpty) {
       await _circleAnnotationManager!.createMulti(newAnnotations);
+    }
+  }
+
+  Future<void> _loadTodayItinerary() async {
+    final repo = LocalRepository();
+    final trip = await repo.getFirstTrip();
+    if (trip == null) return;
+    
+    final days = await repo.getDaysForTrip(trip.tripId);
+    if (days.isEmpty) return;
+    
+    final today = days.first; // For prototyping, always plot 'Day 1'
+    final activities = await repo.getActivitiesForDay(today.dayId);
+    
+    List<CircleAnnotationOptions> markers = [];
+    
+    for (var act in activities) {
+      if (act.location.isNotEmpty) {
+        try {
+          // Attempt Geocoding
+          List<geocoder.Location> locations = await geocoder.locationFromAddress(act.location);
+          if (locations.isNotEmpty) {
+            markers.add(CircleAnnotationOptions(
+              geometry: Point(coordinates: Position(locations.first.longitude, locations.first.latitude)),
+              circleColor: Colors.purple.toARGB32(), // Purple for Itinerary
+              circleRadius: 10.0,
+              circleStrokeColor: Colors.white.toARGB32(),
+              circleStrokeWidth: 3.0,
+            ));
+          }
+        } catch (e) {
+          debugPrint("Geocoding failed for ${act.location}: $e");
+        }
+      }
+    }
+    
+    if (markers.isNotEmpty && _itineraryAnnotationManager != null) {
+      await _itineraryAnnotationManager!.createMulti(markers);
     }
   }
 
@@ -261,7 +333,7 @@ class _MapPageState extends State<MapPage> {
               ),
             ),
             // Draggable Team Members Bottom Sheet
-            TeamBottomSheet(teamStream: _teamStream),
+            const TeamBottomSheet(),
           ],
       ),
     );

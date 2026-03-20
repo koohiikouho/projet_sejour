@@ -4,6 +4,7 @@ import 'package:projet_sejour/widgets/profile/profile_info_card.dart';
 import 'package:projet_sejour/widgets/profile/about_section.dart';
 import 'package:projet_sejour/widgets/profile/analytics_dashboard.dart';
 import 'package:projet_sejour/services/analytics_service.dart';
+import 'package:projet_sejour/services/auth_service.dart';
 import 'package:projet_sejour/models/user_stats.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -28,43 +29,57 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final authService = AuthService();
+    
     return Scaffold(
-      body: StreamBuilder<UserStats>(
-        stream: _analyticsService.streamUserStats(_teamId, _userId),
-        builder: (context, snapshot) {
-          final stats = snapshot.data ?? UserStats.empty();
+      body: FutureBuilder<Map<String, String?>>(
+        future: authService.getUserData(),
+        builder: (context, authSnapshot) {
+          final userData = authSnapshot.data;
+          final userName = userData?['name'];
+          final profilePic = userData?['profilePic'];
 
-          return CustomScrollView(
-            slivers: [
-              // Profile Info Card
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                  child: const ProfileInfoCard(),
-                ),
-              ),
+          return StreamBuilder<UserStats>(
+            stream: _analyticsService.streamUserStats(_teamId, _userId),
+            builder: (context, snapshot) {
+              final stats = snapshot.data ?? UserStats.empty();
 
-              // Analytics Dashboard
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: AnalyticsDashboard(stats: stats),
-                ),
-              ),
+              return CustomScrollView(
+                slivers: [
+                  // Profile Info Card
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                      child: ProfileInfoCard(
+                        name: userName,
+                        profilePic: profilePic,
+                      ),
+                    ),
+                  ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+                  // Analytics Dashboard
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: AnalyticsDashboard(stats: stats),
+                    ),
+                  ),
 
-              // About Section
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: const AboutSection(),
-                ),
-              ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 32)),
 
-              // Bottom padding
-              const SliverToBoxAdapter(child: SizedBox(height: 40)),
-            ],
+                  // About Section
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: AboutSection(name: userName),
+                    ),
+                  ),
+
+                  // Bottom padding
+                  const SliverToBoxAdapter(child: SizedBox(height: 40)),
+                ],
+              );
+            },
           );
         },
       ),

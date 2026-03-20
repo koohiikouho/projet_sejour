@@ -5,6 +5,10 @@ import 'package:projet_sejour/pages/badges_page.dart';
 import 'package:projet_sejour/pages/chatbot_page.dart';
 import 'package:projet_sejour/pages/login_page.dart';
 import 'package:projet_sejour/pages/checklist_page.dart';
+import 'package:projet_sejour/pages/surveys_page.dart';
+import 'package:projet_sejour/pages/journal/journal_history_page.dart';
+import 'package:projet_sejour/pages/vault/vault_page.dart';
+import 'package:projet_sejour/pages/guides/guide_repository_page.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -68,7 +72,7 @@ class AppDrawer extends StatelessWidget {
                         radius: 36,
                         backgroundImage: profilePic != null && profilePic.isNotEmpty
                             ? CachedNetworkImageProvider(profilePic)
-                            : const AssetImage('assets/images/BigHero.jpg') as ImageProvider,
+                            : NetworkImage('https://ui-avatars.com/api/?name=${Uri.encodeComponent(name)}&background=random') as ImageProvider,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -137,6 +141,30 @@ class AppDrawer extends StatelessWidget {
                 ),
                 _buildGridTile(
                   context: context,
+                  icon: Icons.book_rounded,
+                  title: 'Journal',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const JournalHistoryPage()),
+                    );
+                  },
+                ),
+                _buildGridTile(
+                  context: context,
+                  icon: Icons.assignment_turned_in_outlined,
+                  title: 'Surveys',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SurveysPage()),
+                    );
+                  },
+                ),
+                _buildGridTile(
+                  context: context,
                   icon: Icons.checklist_rtl_outlined,
                   title: 'Checklists',
                   onTap: () {
@@ -144,6 +172,30 @@ class AppDrawer extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const ChecklistPage()),
+                    );
+                  },
+                ),
+                _buildGridTile(
+                  context: context,
+                  icon: Icons.menu_book_outlined,
+                  title: 'Guides',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const GuideRepositoryPage()),
+                    );
+                  },
+                ),
+                _buildGridTile(
+                  context: context,
+                  icon: Icons.folder_special_outlined,
+                  title: 'Vault',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const VaultPage()),
                     );
                   },
                 ),

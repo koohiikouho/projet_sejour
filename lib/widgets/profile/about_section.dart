@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 
 class AboutSection extends StatelessWidget {
-  const AboutSection({super.key});
+  final String? name;
+
+  const AboutSection({
+    super.key,
+    this.name,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -30,9 +35,9 @@ class AboutSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Hi. My name is Baymax, your personal healthcare companion. Just Kidding. I am actually a professor of the Information Technology Department of De La Salle University. Nice to meet you!',
-            style: TextStyle(
+          Text(
+            'Hi. My name is ${name ?? 'User'}. I am excited to be participating in this spiritual journey and exploring the historical sites. Nice to meet you!',
+            style: const TextStyle(
               fontSize: 15,
               height: 1.5,
               color: Colors.black87,
@@ -42,8 +47,8 @@ class AboutSection extends StatelessWidget {
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 20),
-
-          // Details Grid
+          
+          // Details Grid (Keeping static for now as per theme)
           const Text(
             'Details',
             style: TextStyle(
@@ -58,16 +63,16 @@ class AboutSection extends StatelessWidget {
             context,
             Icons.cake_rounded,
             'Age',
-            '67 years old',
+            '-- years old',
           ),
           const SizedBox(height: 12),
 
-          // Department
+          // Department (Renamed to clear placeholder)
           _buildDetailRow(
             context,
             Icons.school_rounded,
-            'Department',
-            'DLSU Information Technology',
+            'Group',
+            'Team Alpha',
           ),
           const SizedBox(height: 12),
 
@@ -85,7 +90,7 @@ class AboutSection extends StatelessWidget {
             context,
             Icons.language_rounded,
             'Languages',
-            'English, Filipino, French',
+            'English, Local Dialect',
           ),
         ],
       ),

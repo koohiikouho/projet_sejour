@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:projet_sejour/models/user_stats.dart';
 
 class AnalyticsService {
@@ -51,7 +52,7 @@ class AnalyticsService {
         weeklyActivity: activity,
       );
     } catch (e) {
-      print('Error fetching user stats: $e');
+      debugPrint('Error fetching user stats: $e');
       return UserStats.empty();
     }
   }

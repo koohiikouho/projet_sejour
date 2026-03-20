@@ -7,6 +7,8 @@ import 'package:projet_sejour/widgets/timeline_item.dart';
 import 'package:projet_sejour/data/local_repository.dart';
 import 'package:projet_sejour/models/activity.dart';
 import 'package:projet_sejour/models/itinerary_item.dart';
+import 'package:projet_sejour/widgets/feedback/survey_dialog.dart';
+import 'package:projet_sejour/services/feedback_service.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -24,6 +26,39 @@ class _HomeTabState extends State<HomeTab> {
   void initState() {
     super.initState();
     _loadTodayActivities();
+    _checkFeedbackSurvey();
+  }
+
+  Future<void> _checkFeedbackSurvey() async {
+    try {
+      final feedbackService = FeedbackService();
+      final isDue = await feedbackService.checkIfSurveyDue();
+      if (isDue && mounted) {
+        final periods = await feedbackService.getSurveyPeriods();
+        // find current period: not answered and start is before now
+        final currentPeriod = periods.lastWhere(
+          (p) => !p.isAnswered && (p.start.isBefore(DateTime.now()) || p.start.day == DateTime.now().day),
+          orElse: () => periods.firstWhere((p) => !p.isAnswered, orElse: () => periods.last)
+        );
+
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted && !currentPeriod.isAnswered) {
+             showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => SurveyDialog(period: currentPeriod),
+            ).then((value) {
+              if (value != true) {
+                // If dismissed without submitting
+                feedbackService.dismissSurvey();
+              }
+            });
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error checking survey: $e');
+    }
   }
 
   Future<void> _loadTodayActivities() async {

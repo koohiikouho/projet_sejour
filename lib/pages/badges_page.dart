@@ -21,10 +21,16 @@ class _BadgesPageState extends State<BadgesPage> {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text('My Badges', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 1,
+        title: Text(
+          'My Badges',
+          style: TextStyle(
+            color: colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        iconTheme: IconThemeData(color: colorScheme.primary),
       ),
       body: StreamBuilder<List<BadgeItem>>(
         stream: _badgeService.getAvailableBadgesStream(),
