@@ -117,8 +117,6 @@ class JournalService {
     final snapshot = await uploadTask;
     final downloadUrl = await snapshot.ref.getDownloadURL();
     
-    if (downloadUrl == null) throw Exception("Failed to retrieve download URL.");
-    
     final tokens = _generateTokens(typeStr, location);
 
     await _getMessagesCollection(originalUserId).add({

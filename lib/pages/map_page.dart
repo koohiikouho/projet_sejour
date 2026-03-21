@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -11,6 +12,8 @@ import 'package:projet_sejour/services/background_location_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:projet_sejour/data/local_repository.dart';
 import 'package:geocoding/geocoding.dart' as geocoder;
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -30,6 +33,8 @@ class _MapPageState extends State<MapPage> {
   StreamSubscription<List<TeamMember>>? _teamSubscription;
   StreamSubscription<Map<String, dynamic>?>? _userTeamSubscription;
   String? _currentTeamId;
+
+  PolylineAnnotationManager? _polylineAnnotationManager;
 
 
   @override
@@ -160,9 +165,49 @@ class _MapPageState extends State<MapPage> {
     // Setup Circle Annotations as a reliable fallback for Team Members
     _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
     _itineraryAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
+    _polylineAnnotationManager = await mapboxMap.annotations.createPolylineAnnotationManager();
     
     _startListeningToTeamUpdates();
     _loadTodayItinerary();
+    _fetchAndDrawRouteToDLSU();
+  }
+
+  Future<void> _fetchAndDrawRouteToDLSU() async {
+    if (currentPosition == null) return;
+    final token = dotenv.env['MAPBOX_API_KEY'];
+    if (token == null) return;
+
+    final url = Uri.parse(
+        'https://api.mapbox.com/directions/v5/mapbox/driving/${currentPosition!.longitude},${currentPosition!.latitude};120.9932,14.5648?geometries=geojson&access_token=$token');
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final routes = data['routes'] as List?;
+        if (routes != null && routes.isNotEmpty) {
+          final geometry = routes[0]['geometry'];
+          final coordinates = geometry['coordinates'] as List;
+
+          List<Position> points = coordinates.map((coord) {
+            return Position(coord[0].toDouble(), coord[1].toDouble());
+          }).toList();
+
+          if (_polylineAnnotationManager != null) {
+            await _polylineAnnotationManager!.deleteAll();
+            await _polylineAnnotationManager!.create(
+              PolylineAnnotationOptions(
+                geometry: LineString(coordinates: points),
+                lineColor: Colors.blue.toARGB32(),
+                lineWidth: 5.0,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching route: $e');
+    }
   }
 
   void _startListeningToTeamUpdates() {
