@@ -49,3 +49,6 @@ analyze_output.txt
 analyze_output_final.txt
 analyze_output_final_v2.txt
 analyze_output_utf8.txt
+.env.example
+doctor_output.txt
+doctor_output_utf8.txt

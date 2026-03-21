@@ -70,14 +70,13 @@ class AuthService {
         'role': 'pilgrim', // Default role
         'avatarUrl': user.photoURL,
         'createdAt': FieldValue.serverTimestamp(),
-      });
-    } else {
-      // Optional: Update profile pic or name if changed in Google
-      await userDoc.update({
-        'avatarUrl': user.photoURL,
-        'username': user.displayName,
+        'bio': null,
+        'age': null,
+        'department': null,
+        'languages': [],
       });
     }
+    // Removed the else block that was overwriting manual edits on every login
   }
 
   Future<void> logout() async {

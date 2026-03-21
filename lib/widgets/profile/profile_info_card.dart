@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:projet_sejour/models/user_profile.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:projet_sejour/pages/edit_profile_page.dart';
 
 class ProfileInfoCard extends StatelessWidget {
-  const ProfileInfoCard({super.key});
+  final UserProfile profile;
+
+  const ProfileInfoCard({super.key, required this.profile});
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +31,11 @@ class ProfileInfoCard extends StatelessWidget {
               ),
             ],
           ),
-          child: const CircleAvatar(
+          child: CircleAvatar(
             radius: 50,
-            backgroundImage: AssetImage('assets/images/BigHero.jpg'),
+            backgroundImage: profile.avatarUrl != null
+                ? CachedNetworkImageProvider(profile.avatarUrl!)
+                : const AssetImage('assets/images/BigHero.jpg') as ImageProvider,
           ),
         ),
         const SizedBox(width: 16),
@@ -38,12 +45,31 @@ class ProfileInfoCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Baymax',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      profile.username,
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditProfilePage(profile: profile),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.edit_outlined),
+                  ),
+                ],
               ),
               const SizedBox(height: 4),
               Container(
@@ -55,9 +81,9 @@ class ProfileInfoCard extends StatelessWidget {
                   color: colorScheme.primary,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  'Pilgrim',
-                  style: TextStyle(
+                child: Text(
+                  profile.role ?? 'Pilgrim',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -70,4 +96,4 @@ class ProfileInfoCard extends StatelessWidget {
       ],
     );
   }
-}
+}
