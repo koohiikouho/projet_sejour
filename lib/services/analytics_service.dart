@@ -126,9 +126,54 @@ class AnalyticsService {
           .doc(teamId)
           .collection('members')
           .doc(userId)
-          .update({
+          .set({
         'totalDistanceKm': 15.4,
         'currentStreak': 5,
+        'totalBadges': 3,
+      }, SetOptions(merge: true));
+    }
+  }
+
+  // Simulate new activity for testing
+  Future<void> simulateActivity(String teamId, String userId, double distance, {int? streak}) async {
+    final memberRef = _firestore
+        .collection('teams')
+        .doc(teamId)
+        .collection('members')
+        .doc(userId);
+
+    // 1. Update aggregate stats
+    final Map<String, dynamic> updates = {
+      'totalDistanceKm': FieldValue.increment(distance),
+    };
+    if (streak != null) {
+      updates['currentStreak'] = streak;
+    }
+    await memberRef.update(updates);
+
+    // 2. Update today's activity
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    
+    final dailySnapshot = await memberRef
+        .collection('daily_activity')
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .limit(1)
+        .get();
+
+    final int scoreToAdd = (distance * 20).round();
+
+    if (dailySnapshot.docs.isNotEmpty) {
+      final docId = dailySnapshot.docs.first.id;
+      await memberRef.collection('daily_activity').doc(docId).update({
+        'distanceKm': FieldValue.increment(distance),
+        'activityScore': FieldValue.increment(scoreToAdd),
+      });
+    } else {
+      await memberRef.collection('daily_activity').add({
+        'date': Timestamp.fromDate(now),
+        'distanceKm': distance,
+        'activityScore': scoreToAdd,
       });
     }
   }

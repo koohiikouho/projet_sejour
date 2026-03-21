@@ -188,7 +188,7 @@ class _TeamBottomSheetState extends State<TeamBottomSheet> {
   }
 
   Widget _buildScannerView() {
-    return SliverFillRemaining(
+    return SliverToBoxAdapter(
       child: Column(
         children: [
           Padding(
@@ -200,7 +200,8 @@ class _TeamBottomSheetState extends State<TeamBottomSheet> {
               ],
             ),
           ),
-          Expanded(
+          SizedBox(
+            height: 400,
             child: MobileScanner(
               onDetect: (capture) async {
                 final List<Barcode> barcodes = capture.barcodes;
@@ -226,7 +227,7 @@ class _TeamBottomSheetState extends State<TeamBottomSheet> {
   }
 
   Widget _buildNoTeamView() {
-    return SliverFillRemaining(
+    return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
@@ -368,7 +369,14 @@ class _TeamBottomSheetState extends State<TeamBottomSheet> {
                 ),
                 
                 if (members.isEmpty)
-                  const SliverFillRemaining(child: Center(child: Text("No team members found")))
+                  const SliverToBoxAdapter(
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40.0),
+                        child: Text("No team members found"),
+                      ),
+                    ),
+                  )
                 else
                   SliverList(
                     delegate: SliverChildBuilderDelegate(

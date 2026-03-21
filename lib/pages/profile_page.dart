@@ -86,6 +86,81 @@ class _ProfilePageState extends State<ProfilePage> {
           );
         },
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final TextEditingController distanceController = TextEditingController(text: '0.5');
+          final TextEditingController streakController = TextEditingController(text: '5');
+          
+          final result = await showDialog<Map<String, dynamic>>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Simulate Activity'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Customize your simulation:'),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: distanceController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Distance',
+                      suffixText: 'km',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: streakController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Current Streak',
+                      suffixText: 'days',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context, {
+                      'distance': double.tryParse(distanceController.text) ?? 0.0,
+                      'streak': int.tryParse(streakController.text) ?? 0,
+                    });
+                  },
+                  child: const Text('Simulate'),
+                ),
+              ],
+            ),
+          );
+
+          if (result != null) {
+            final double distance = result['distance'];
+            final int streak = result['streak'];
+            
+            await _analyticsService.simulateActivity(
+              _teamId, 
+              _userId, 
+              distance, 
+              streak: streak,
+            );
+            
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Updated analytics: ${distance}km, $streak day streak!')),
+              );
+            }
+          }
+        },
+        label: const Text('Test Analytics'),
+        icon: const Icon(Icons.directions_walk),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+      ),
     );
   }
 }
