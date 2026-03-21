@@ -26,26 +26,37 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  await dotenv.load(fileName: ".env");
-  await Firebase.initializeApp();
-  
-  // Initialize push notification & vibration handling
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  await NotificationService.initialize();
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    
+    await dotenv.load(fileName: ".env");
+    await Firebase.initializeApp();
+    
+    // Initialize push notification & vibration handling
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    await NotificationService.initialize();
 
-  // Initialize background location tracking service
-  await BackgroundLocationService.initialize();
+    // Initialize background location tracking service
+    await BackgroundLocationService.initialize();
 
-  // Initialize Mapbox with the public access token from .env
-  String mapboxToken = dotenv.env['MAPBOX_API_KEY'] ?? '';
-  MapboxOptions.setAccessToken(mapboxToken);
+    // Initialize Mapbox with the public access token from .env
+    String mapboxToken = dotenv.env['MAPBOX_API_KEY'] ?? '';
+    MapboxOptions.setAccessToken(mapboxToken);
 
-  // Pre-populate global badges collection if it is empty
-  await BadgeService().seedInitialBadges();
+    // Pre-populate global badges collection if it is empty
+    // Wrap in try-catch to prevent blocking app startup if Firestore fails/is slow
+    try {
+      await BadgeService().seedInitialBadges().timeout(const Duration(seconds: 5));
+    } catch (e) {
+      debugPrint("Badge seeding skipped or timed out: $e");
+    }
 
-  runApp(const ProjetSejourApp());
+    runApp(const ProjetSejourApp());
+  } catch (e) {
+    debugPrint("Critical initialization error: $e");
+    // Run app anyway so user can see an error UI or attempt login if possible
+    runApp(const ProjetSejourApp());
+  }
 }
 
 class ProjetSejourApp extends StatelessWidget {

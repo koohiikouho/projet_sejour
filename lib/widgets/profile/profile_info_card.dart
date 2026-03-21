@@ -25,7 +25,7 @@ class ProfileInfoCard extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
+                color: Colors.black.withOpacity(0.2),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -33,9 +33,9 @@ class ProfileInfoCard extends StatelessWidget {
           ),
           child: CircleAvatar(
             radius: 50,
-            backgroundImage: profile.avatarUrl != null
+            backgroundImage: profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty
                 ? CachedNetworkImageProvider(profile.avatarUrl!)
-                : const AssetImage('assets/images/BigHero.jpg') as ImageProvider,
+                : NetworkImage('https://ui-avatars.com/api/?name=${Uri.encodeComponent(profile.username)}&background=random') as ImageProvider,
           ),
         ),
         const SizedBox(width: 16),
@@ -96,4 +96,4 @@ class ProfileInfoCard extends StatelessWidget {
       ],
     );
   }
-}
+}

@@ -29,11 +29,16 @@ class _AllAnnouncementsPageState extends State<AllAnnouncementsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        backgroundColor: Colors.white,
+        elevation: 1,
+        title: Text(
           'All Announcements',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        centerTitle: true,
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
       ),
       body: Column(
         children: [

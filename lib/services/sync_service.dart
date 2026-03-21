@@ -51,7 +51,7 @@ class SyncService {
       final tripsSnapshot = await _firestore.collection('trips').get();
       for (var tripDoc in tripsSnapshot.docs) {
         try {
-          final tripData = tripDoc.data() as Map<String, dynamic>;
+          final tripData = tripDoc.data();
           final trip = Trip(
             tripId: tripDoc.id,
             tripName: tripData['tripName'] ?? '',
@@ -67,7 +67,7 @@ class SyncService {
               .get();
           for (var dayDoc in daysSnapshot.docs) {
             try {
-              final dayData = dayDoc.data() as Map<String, dynamic>;
+              final dayData = dayDoc.data();
               final day = ItineraryDay(
                 dayId: dayDoc.id,
                 tripId: trip.tripId,
@@ -78,7 +78,7 @@ class SyncService {
 
               // Sync Activities for this day
               final lastSyncKey = 'lastSync_activities_${day.dayId}';
-              final lastSyncStr = prefs.getString(lastSyncKey);
+              // final lastSyncStr = prefs.getString(lastSyncKey); // Unused due to commented block below
 
               Query activityQuery = dayDoc.reference.collection('activities');
               /* 

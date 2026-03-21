@@ -7,6 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:projet_sejour/services/badge_service.dart';
 
 class BackgroundLocationService {
@@ -48,7 +49,6 @@ Future<bool> onIosBackground(ServiceInstance service) async {
   return true;
 }
 
-// Cross-Platform Background Entry Point
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
   // Ensure background isolate is ready
@@ -67,16 +67,16 @@ void onStart(ServiceInstance service) async {
   });
 
   // Start continuous GPS tracking
-  final LocationSettings locationSettings = LocationSettings(
+  const LocationSettings locationSettings = LocationSettings(
     accuracy: LocationAccuracy.high,
     distanceFilter: 10, 
   );
 
-  // Note: hardcoded 'user_123' for demonstration
-  // In a real app, we would pass SharedPreferences or secure storage user ID here
-  final String userId = 'user_123';
+  // Fetch actual User Data from Shared Preferences (Set by AuthService during Login)
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final String userId = prefs.getString('auth_token') ?? 'user_123_anon';
   final String teamId = 'team_alpha';
-  final String userName = 'Hiro Hamada (BG)';
+  final String userName = prefs.getString('user_name') ?? 'Pilgrim User';
 
   Geolocator.getPositionStream(locationSettings: locationSettings)
       .listen((Position position) async {
@@ -90,7 +90,7 @@ void onStart(ServiceInstance service) async {
       // Update the continuous Android Notification banner
       service.setForegroundNotificationInfo(
         title: "Projet Sejour Active",
-        content: "Tracking position: \${position.latitude.toStringAsFixed(4)}, \${position.longitude.toStringAsFixed(4)}",
+        content: "Tracking position: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}",
       );
     }
 

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -33,7 +34,7 @@ class WeatherService {
 
     if (apiKey == null || apiKey.isEmpty || apiKey == 'YOUR_OPENWEATHER_API_KEY') {
       // Mock data if no API key is provided
-      print('Using mock weather data (no API key found)');
+      debugPrint('Using mock weather data (no API key found)');
       return WeatherData(
         temperature: 18.0,
         condition: WeatherCondition.rain,
@@ -54,7 +55,7 @@ class WeatherService {
           cityName: data['name'],
         );
       } else if (response.statusCode == 401) {
-        print('Weather Service: 401 Unauthorized. Using mock data.');
+        debugPrint('Weather Service: 401 Unauthorized. Using mock data.');
         return WeatherData(
           temperature: 20.0,
           condition: WeatherCondition.clear,
@@ -62,11 +63,11 @@ class WeatherService {
         );
       } else {
         final errorData = jsonDecode(response.body);
-        print('Weather Registry Error (${response.statusCode}): ${errorData['message']}');
+        debugPrint('Weather Registry Error (${response.statusCode}): ${errorData['message']}');
         throw Exception('API Error: ${errorData['message']}');
       }
     } catch (e) {
-      print('Weather Service Exception: $e');
+      debugPrint('Weather Service Exception: $e');
       // If we are here, something went wrong with the network or API
       return WeatherData(
         temperature: 0.0,

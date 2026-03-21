@@ -17,7 +17,7 @@ class AboutSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -35,7 +35,7 @@ class AboutSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            profile.bio ?? 'No bio yet. Tap the edit button to add one!',
+            profile.bio ?? 'Hi. My name is ${profile.username}. I am excited to be participating in this spiritual journey and exploring the historical sites. Nice to meet you!',
             style: const TextStyle(
               fontSize: 15,
               height: 1.5,
@@ -64,25 +64,31 @@ class AboutSection extends StatelessWidget {
               Icons.cake_rounded,
               'Age',
               '${profile.age} years old',
-            ),
-          if (profile.age != null) const SizedBox(height: 12),
-
-          // Department
-          if (profile.department != null && profile.department!.isNotEmpty)
+            )
+          else
             _buildDetailRow(
               context,
-              Icons.school_rounded,
-              'Department',
-              profile.department!,
+              Icons.cake_rounded,
+              'Age',
+              '-- years old',
             ),
-          if (profile.department != null && profile.department!.isNotEmpty) const SizedBox(height: 12),
+          const SizedBox(height: 12),
+
+          // Group / Department
+          _buildDetailRow(
+            context,
+            Icons.group_rounded,
+            'Group',
+            profile.department ?? 'Team Alpha',
+          ),
+          const SizedBox(height: 12),
 
           // Member Since
           _buildDetailRow(
             context,
             Icons.calendar_today_rounded,
             'Member since',
-            profile.createdAt != null ? DateFormat('MMMM yyyy').format(profile.createdAt!) : 'Recently',
+            profile.createdAt != null ? DateFormat('MMMM yyyy').format(profile.createdAt!) : 'March 2024',
           ),
           const SizedBox(height: 12),
 
@@ -93,6 +99,13 @@ class AboutSection extends StatelessWidget {
               Icons.language_rounded,
               'Languages',
               profile.languages!.join(', '),
+            )
+          else
+            _buildDetailRow(
+              context,
+              Icons.language_rounded,
+              'Languages',
+              'English, Local Dialect',
             ),
         ],
       ),
@@ -105,7 +118,7 @@ class AboutSection extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
@@ -139,4 +152,4 @@ class AboutSection extends StatelessWidget {
       ],
     );
   }
-}
+}

@@ -1,0 +1,132 @@
+Technical Documentation Outline: Sojourn Compass Mobile App
+===========================================================
+
+1. Overview of the Project
+--------------------------
+Purpose:
+The Sojourn Compass Mobile Application aims to address critical gaps in coordination, communication, and engagement during organized Lasallian pilgrimages. It serves as a digital ecosystem designed to replace the current fragmented system of rapidly changing and outdated Google Sheet itineraries, verbal instructions, and manual attendance tracking with a centralized, user-friendly mobile platform. 
+
+Objectives:
+- Information Dissemination: Unify and centralize all announcements, schedules, and alerts to eliminate the chaos of scattered Viber and Messenger chats.
+- Coordination & Safety: Provide real-time GPS group tracking and automated smart checklists to ensure elder participants do not get lost or forget essential documents (like the Pilgrim's Passport).
+- Experience Enhancement: Enhance the spiritual and educational experience through gamification (Digital Badges) and Augmented Reality (AR) tools that overcome language barriers.
+- Feedback loop: Establish a real-time, contextually triggered feedback loop between pilgrims and coordinators to replace ineffective post-trip surveys.
+
+Expected Outcomes:
+The implementation of Sojourn Compass will lead to a measurable reduction in coordination errors, significantly improved participant satisfaction and accessibility, and the creation of a unified, historical database containing multimedia reflection journals and documentation for future pilgrimage programs.
+
+
+2. User-Interface
+-----------------
+[DEVELOPER NOTE: Insert application screenshots here specifically demonstrating:]
+- The Login Screen (Google-based Authenticated Gateway).
+- The Live Itinerary Tab (Card-based daily schedule displaying site names, timings, and photos).
+- The Announcement Board (Reverse-chronological feed with pinned priority messages).
+- The Map & Team Tracker Tab (Mapbox display with real-time teammate locations and Itinerary waypoints).
+- The Digital Badge Dashboard and the Reflection Journal input screen.
+
+
+3. Developer Documentation
+--------------------------
+
+3.1. Architecture Overview
+The Sojourn Compass application is built on an Offline-First, Service-Oriented Architecture (SOA). Given the variable nature of European public internet access, the system relies on a local SQLite cache as its primary data layer, synchronized asynchronously with a Firebase Cloud Firestore backend. 
+
+[System Architecture Diagram]
+(Client Device) -> Flutter UI Components
+       |
+       v
+(Services Layer) -> BackgroundLocationService, SyncService, SearchApiService
+       |
+       +----> (Local Storage) -> SQLite Repository (Itinerary, Badges)
+       |
+       +----> (Cloud Backend) -> Firestore (Teams, Announcements, Vault) & Firebase Auth
+
+Use-Case Diagram Descriptions (Derived from Project BPMNs):
+1. Login Process: Users open the app and trigger an authentication check. Unauthenticated users are served the login prompt, verifying credentials against the backend. Success yields a token, distinguishing standard pilgrims from coordinators.
+2. Group Tracking Process: Upon opening the Group Tracker, background geolocation services collect real-time coordinates. The backend aggregates this point data and renders it onto the map. Team leaders use this to conduct digital headcounts and locate wandering members.
+3. Daily Itinerary Process: Users select the itinerary tab, pulling offline data from the local database. If participants spot outdated information, they can submit an incorrect information report (Feedback loop) which coordinators receive instantly to issue updates.
+4. Announcement Retrieval: Dual-layer approach where the app polls the backend for the latest published messages, stores them in the local database, and renders them. This guarantees access during cellular blackouts on foreign buses.
+5. AR Process: Users invoke the camera tab, point the device at a historical artifact, and the system performs tracking and recognition to overlay translated historical contexts directly onto the screen.
+
+
+3.2. Codebase Overview
+The proprietary logic is written in Dart using the Flutter framework, structured to enforce a clean separation of concerns:
+
+- `/lib/models/`: Contains Data Transfer Objects (DTOs) like `Activity`, `TeamMember`, and `JournalEntry`. These classes handle the serialization/deserialization between SQLite mapping arrays and Firebase JSON documents.
+- `/lib/data/`: Houses `local_repository.dart`, the core SQLite execution engine managing tables for Trips, Itinerary Days, and Activities.
+- `/lib/services/`: Contains the core business logic controllers.
+  - `LocationSyncService.dart`: Manages live telemetry, handles QR code payload parsing for joining dynamic groups, and listens/pushes real-time Pings to the Firestore database.
+  - `SyncService.dart`: The background polling agent that fetches Firestore records and updates the SQLite repository.
+  - `BadgeService.dart`: Computes geographic proximity using Haversine formulas against the user's location stream to award gamified milestones.
+  - `JournalService.dart` & `VaultService.dart`: Manages file I/O operations and integrates with Cloudinary and Firebase Storage for uploading secure documents and media.
+- `/lib/pages/`: Contains stateful view screens governing individual features (e.g., `MapPage`, `ItineraryOverviewPage`, `GuideRepositoryPage`).
+- `/lib/widgets/`: Highly customized components meant for reuse, such as the `TeamBottomSheet` (handling QR generation/scanning) and `TimelineCard`.
+
+
+3.3. Database Schema
+Sojourn Compass relies on a robust Data Dictionary bridging both a Local Relational Database and a Remote NoSQL structure.
+
+[ Local SQLite Schema ] (Offline Cache)
+* Table: trips
+  - tripId (TEXT, Primary Key)
+  - tripName (TEXT)
+  - startDate (TEXT) / endDate (TEXT)
+  - destinations (TEXT)
+  - status (TEXT)
+
+* Table: itinerary_days
+  - dayId (TEXT, Primary Key)
+  - tripId (TEXT, Foreign Key)
+  - date (TEXT)
+  - dayNumber (INTEGER)
+  - theme (TEXT)
+
+* Table: activities
+  - activityId (TEXT, Primary Key)
+  - dayId (TEXT, Foreign Key)
+  - siteName (TEXT)
+  - description (TEXT)
+  - category (TEXT)
+  - location (TEXT) -> Used by Mapbox geocoding for offline routing.
+  - scheduledArrival (TEXT) / scheduledDeparture (TEXT)
+  - whatToBring (TEXT) -> Serialized JSON array for the Smart Checklist.
+
+[ Cloud Firestore NoSQL Schema ] (Real-Time Subsystems)
+* Collection: users
+  - Document ID: Firebase Auth UID
+  - teamId (String): Reference to active ad-hoc group.
+  - isTeamLeader (Boolean): Grants admin privileges for group tracking.
+
+* Collection: teams
+  - Document ID: Auto-generated string
+  - name (String): Group title.
+  - leaderId (String): Creator UID.
+  - joinCode (String): 6-digit alphanumeric key for UI QR generation.
+  > Subcollection: members (Doc ID = User UID)
+    - name (String), role (String)
+    - latitude (Double), longitude (Double)
+    - isOnline (Boolean)
+  > Subcollection: pings (Doc ID = Ping ID)
+    - message (String)
+    - timestamp (Timestamp)
+
+* Collection: journal_entries
+  - id (String)
+  - title (String), content (String)
+  - mediaUrl (String) -> Cloudinary Asset link.
+  - location (String)
+  - entryDate (Timestamp)
+
+* Collection: vault_documents
+  - id (String)
+  - userId (String) -> Restricts visibility to user only.
+  - title (String)
+  - fileUrl (String) -> Firebase Storage URI link.
+  - category (String) -> 'Visas', 'Passports', etc.
+
+* Collection: activity_guides
+  - id (String)
+  - title (String), content (String)
+  - category (String), location (String)
+  - mediaUrls (Array) -> Links to audio lectures.
