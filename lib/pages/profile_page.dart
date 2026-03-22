@@ -87,6 +87,7 @@ class _ProfilePageState extends State<ProfilePage> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'profile_fab',
         onPressed: () async {
           final TextEditingController distanceController = TextEditingController(text: '0.5');
           final TextEditingController streakController = TextEditingController(text: '5');

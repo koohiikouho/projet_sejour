@@ -18,6 +18,18 @@ class UserService {
     });
   }
 
+  // Fetch user profile exactly once
+  Future<UserProfile?> getUserProfile() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    
+    final doc = await _firestore.collection('users').doc(user.uid).get();
+    if (doc.exists) {
+      return UserProfile.fromFirestore(doc);
+    }
+    return null;
+  }
+
   // Update user profile
   Future<void> updateUserProfile(UserProfile profile) async {
     await _firestore.collection('users').doc(profile.uid).update(profile.toMap());

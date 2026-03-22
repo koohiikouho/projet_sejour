@@ -19,7 +19,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -70,6 +70,8 @@ class DatabaseHelper {
         category TEXT NOT NULL,
         mobilityRating TEXT,
         location TEXT,
+        latitude REAL,
+        longitude REAL,
         scheduledArrival TEXT NOT NULL,
         scheduledDeparture TEXT NOT NULL,
         whatToBring TEXT,

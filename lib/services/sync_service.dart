@@ -24,22 +24,30 @@ class SyncService {
     return DateTime.now();
   }
 
-  List<String> _parseStringList(dynamic value) {
+  List<TodoItem> _parseTodoList(dynamic value) {
     if (value == null) return [];
     if (value is Iterable) {
-      return List<String>.from(value.map((e) => e.toString()));
+      return value.map((e) {
+        if (e is String) return TodoItem(title: e);
+        if (e is Map<String, dynamic> || e is Map) return TodoItem.fromJson(Map<String, dynamic>.from(e as Map));
+        return TodoItem(title: e.toString());
+      }).toList();
     }
     if (value is String) {
       if (value.trim().isEmpty) return [];
       try {
         final decoded = json.decode(value);
         if (decoded is Iterable) {
-          return List<String>.from(decoded.map((e) => e.toString()));
+          return decoded.map((e) {
+            if (e is String) return TodoItem(title: e);
+            if (e is Map<String, dynamic> || e is Map) return TodoItem.fromJson(Map<String, dynamic>.from(e as Map));
+            return TodoItem(title: e.toString());
+          }).toList();
         }
       } catch (_) {}
-      return [value];
+      return [TodoItem(title: value)];
     }
-    return [value.toString()];
+    return [TodoItem(title: value.toString())];
   }
 
   /// Synchronize all Trips, Days, and Activities from Firestore into local SQLite cache
@@ -105,13 +113,15 @@ class SyncService {
                     mobilityRating:
                         activityData['mobilityRating']?.toString() ?? '',
                     location: activityData['location'] ?? '',
+                    latitude: (activityData['latitude'] as num?)?.toDouble(),
+                    longitude: (activityData['longitude'] as num?)?.toDouble(),
                     scheduledArrival: _parseDate(
                       activityData['scheduledArrival'],
                     ),
                     scheduledDeparture: _parseDate(
                       activityData['scheduledDeparture'],
                     ),
-                    whatToBring: _parseStringList(activityData['whatToBring']),
+                    whatToBring: _parseTodoList(activityData['whatToBring']),
                     lastUpdatedAt: _parseDate(activityData['lastUpdatedAt']),
                     isCompleted: activityData['isCompleted'] == true,
                   );

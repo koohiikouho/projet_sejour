@@ -168,16 +168,55 @@ class _MapPageState extends State<MapPage> {
     
     _startListeningToTeamUpdates();
     _loadTodayItinerary();
-    _fetchAndDrawRouteToDLSU();
+    _fetchAndDrawRouteToNextActivity();
   }
 
-  Future<void> _fetchAndDrawRouteToDLSU() async {
+  Future<void> _fetchAndDrawRouteToNextActivity() async {
     if (currentPosition == null) return;
     final token = dotenv.env['MAPBOX_API_KEY'];
     if (token == null) return;
 
+    final repo = LocalRepository();
+    final trip = await repo.getFirstTrip();
+    if (trip == null) return;
+
+    final days = await repo.getDaysForTrip(trip.tripId);
+    if (days.isEmpty) return;
+    
+    // For prototyping, we check the first day, but ideally this checks today's date
+    final today = days.first; 
+    final activities = await repo.getActivitiesForDay(today.dayId);
+    
+    if (activities.isEmpty) return;
+
+    // Find the next incomplete activity
+    final nextActivity = activities.firstWhere(
+      (act) => !act.isCompleted, 
+      orElse: () => activities.first
+    );
+
+    // Use explicit coordinates if provided, fallback to geocoding the location string
+    double? targetLat = nextActivity.latitude;
+    double? targetLng = nextActivity.longitude;
+
+    if (targetLat == null || targetLng == null) {
+      if (nextActivity.location.isEmpty) return;
+      try {
+        List<geocoder.Location> locations = await geocoder.locationFromAddress(nextActivity.location);
+        if (locations.isNotEmpty) {
+          targetLat = locations.first.latitude;
+          targetLng = locations.first.longitude;
+        }
+      } catch (e) {
+        debugPrint("Geocoding failed for navigation to ${nextActivity.location}: $e");
+        return;
+      }
+    }
+
+    if (targetLat == null || targetLng == null) return;
+
     final url = Uri.parse(
-        'https://api.mapbox.com/directions/v5/mapbox/driving/${currentPosition!.longitude},${currentPosition!.latitude};120.9932,14.5648?geometries=geojson&access_token=$token');
+        'https://api.mapbox.com/directions/v5/mapbox/driving/${currentPosition!.longitude},${currentPosition!.latitude};$targetLng,$targetLat?geometries=geojson&access_token=$token');
 
     try {
       final response = await http.get(url);
@@ -208,7 +247,7 @@ class _MapPageState extends State<MapPage> {
       }
     } catch (e) {
       if (mounted) {
-        debugPrint('Error fetching route: $e');
+        debugPrint('Error fetching route to next activity: $e');
       }
     }
   }

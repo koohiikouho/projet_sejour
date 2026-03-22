@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:projet_sejour/services/auth_service.dart';
@@ -49,42 +50,71 @@ class FeedbackService {
   }
 
   Future<List<SurveyPeriod>> getSurveyPeriods() async {
-    final trip = await _localRepository.getFirstTrip();
-    if (trip == null) return [];
-
     final List<SurveyPeriod> periods = [];
-    DateTime currentStart = trip.startDate;
-    int surveyNo = 1;
-
-    // Fetch answered surveys from Firestore
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? (await SharedPreferences.getInstance()).getString('auth_token') ?? 'anonymous';
-
-    final answeredSnap = await _firestore
-        .collection('responses')
-        .where('userId', isEqualTo: userId)
-        .get();
-    
-    final answeredBundles = {for (var doc in answeredSnap.docs) (doc.data()['bundleId'] as String): doc.data()};
-
-    while (currentStart.isBefore(DateTime.now()) || currentStart.isAtSameMomentAs(DateTime.now())) {
-      DateTime currentEnd = currentStart.add(const Duration(days: 2)); // 3-day window (inclusive)
+    try {
+      final trip = await _localRepository.getFirstTrip();
       
-      final tempPeriod = SurveyPeriod(start: currentStart, end: currentEnd, surveyNo: surveyNo);
-      final data = answeredBundles[tempPeriod.bundleId];
+      // Default to a 30-day window starting from 1 week ago if no trip exists
+      DateTime currentStart = trip?.startDate ?? DateTime.now().subtract(const Duration(days: 7));
+      int surveyNo = 1;
 
+      final Map<String, dynamic> answeredBundles = {};
+      
+      try {
+        final userId = FirebaseAuth.instance.currentUser?.uid ?? (await SharedPreferences.getInstance()).getString('auth_token') ?? 'anonymous';
+
+        final answeredSnap = await _firestore
+            .collection('responses')
+            .where('userId', isEqualTo: userId)
+            .get();
+        
+        for (var doc in answeredSnap.docs) {
+          final data = doc.data();
+          if (data.containsKey('bundleId')) {
+            answeredBundles[data['bundleId'] as String] = data;
+          }
+        }
+      } catch (e) {
+        debugPrint('FeedbackService: Error fetching answered surveys: $e');
+        // If Firestore fails, we just show everything as unanswered
+      }
+
+      while (currentStart.isBefore(DateTime.now()) || currentStart.isAtSameMomentAs(DateTime.now())) {
+        DateTime currentEnd = currentStart.add(const Duration(days: 2)); // 3-day window (inclusive)
+        
+        final tempPeriod = SurveyPeriod(start: currentStart, end: currentEnd, surveyNo: surveyNo);
+        final data = answeredBundles[tempPeriod.bundleId];
+
+        periods.add(SurveyPeriod(
+          start: currentStart,
+          end: currentEnd,
+          surveyNo: surveyNo,
+          isAnswered: data != null,
+          data: data,
+        ));
+
+        currentStart = currentEnd.add(const Duration(days: 1));
+        surveyNo++;
+        
+        // Stop generating if we are too far in the future
+        if (currentStart.isAfter(DateTime.now().add(const Duration(days: 7)))) break;
+      }
+    } catch (e) {
+      debugPrint('FeedbackService: Fatal error in getSurveyPeriods: $e');
+      // If everything fails, return one dummy period so simulation button works
       periods.add(SurveyPeriod(
-        start: currentStart,
-        end: currentEnd,
-        surveyNo: surveyNo,
-        isAnswered: data != null,
-        data: data,
+        start: DateTime.now().subtract(const Duration(days: 3)),
+        end: DateTime.now(),
+        surveyNo: 1,
       ));
+    }
 
-      currentStart = currentEnd.add(const Duration(days: 1));
-      surveyNo++;
-      
-      // Stop generating if we are too far in the future
-      if (currentStart.isAfter(DateTime.now().add(const Duration(days: 7)))) break;
+    if (periods.isEmpty) {
+      periods.add(SurveyPeriod(
+        start: DateTime.now().subtract(const Duration(days: 3)),
+        end: DateTime.now(),
+        surveyNo: 1,
+      ));
     }
 
     return periods;

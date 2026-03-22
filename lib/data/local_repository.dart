@@ -65,6 +65,7 @@ class LocalRepository {
     final db = await dbHelper.database;
     final maps = await db.query(
       'trips',
+      orderBy: 'tripId DESC',
       limit: 1,
     );
     if (maps.isNotEmpty) {

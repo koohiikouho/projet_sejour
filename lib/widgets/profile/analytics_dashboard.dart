@@ -72,7 +72,21 @@ class AnalyticsDashboard extends StatelessWidget {
                   BarChartData(
                     alignment: BarChartAlignment.spaceAround,
                     maxY: 10,
-                    barTouchData: BarTouchData(enabled: true),
+                    barTouchData: BarTouchData(
+                      enabled: true,
+                      touchTooltipData: BarTouchTooltipData(
+                        getTooltipColor: (group) => colorScheme.primary,
+                        getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                          return BarTooltipItem(
+                            '${rod.toY.toStringAsFixed(1)} km',
+                            TextStyle(
+                              color: colorScheme.onPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                     titlesData: FlTitlesData(
                       show: true,
                       bottomTitles: AxisTitles(
@@ -93,11 +107,32 @@ class AnalyticsDashboard extends StatelessWidget {
                           },
                         ),
                       ),
-                      leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 28,
+                          getTitlesWidget: (value, meta) {
+                            if (value % 2 != 0) return const SizedBox(); // Show even numbers
+                            return Text(
+                              value.toInt().toString(),
+                              style: const TextStyle(fontSize: 10, color: Colors.grey),
+                            );
+                          },
+                        ),
+                      ),
                       topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                       rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     ),
-                    gridData: const FlGridData(show: false),
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      drawHorizontalLine: true,
+                      getDrawingHorizontalLine: (value) => FlLine(
+                        color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                        strokeWidth: 1,
+                        dashArray: [5, 5],
+                      ),
+                    ),
                     borderData: FlBorderData(show: false),
                     barGroups: stats.weeklyActivity.asMap().entries.map((entry) {
                       return BarChartGroupData(

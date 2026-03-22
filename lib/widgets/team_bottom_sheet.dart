@@ -293,11 +293,14 @@ class _TeamBottomSheetState extends State<TeamBottomSheet> {
                       children: [
                         Row(
                           children: [
-                            Text(
-                              teamData['name'] ?? 'My Team',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                            Expanded(
+                              child: Text(
+                                teamData['name'] ?? 'My Team',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                            const Spacer(),
+                            const SizedBox(width: 12),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
@@ -442,9 +445,15 @@ class _TeamBottomSheetState extends State<TeamBottomSheet> {
       ),
       title: Row(
         children: [
-          Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(width: 8),
-          if (isCurrentUser)
+          Flexible(
+            child: Text(
+              name,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (isCurrentUser) ...[
+            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
@@ -453,6 +462,7 @@ class _TeamBottomSheetState extends State<TeamBottomSheet> {
               ),
               child: const Text('YOU', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
             ),
+          ],
         ],
       ),
       subtitle: Column(

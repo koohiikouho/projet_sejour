@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:projet_sejour/services/search_api_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ARPage extends StatefulWidget {
   final bool isActive;
@@ -156,6 +157,7 @@ class _ARPageState extends State<ARPage>
 
     try {
       final xFile = await _cameraController!.takePicture();
+      await _cameraController!.pausePreview(); // Freeze the frame
       
       final scanResult = await _searchApiService.performVisualSearch(xFile.path);
 
@@ -166,6 +168,7 @@ class _ARPageState extends State<ARPage>
             _showDetails = true;
           });
         } else {
+          _cameraController?.resumePreview(); // Unfreeze if nothing found
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('No results found or search failed.')),
           );
@@ -173,6 +176,7 @@ class _ARPageState extends State<ARPage>
       }
     } catch (e) {
       debugPrint("Search error: $e");
+      _cameraController?.resumePreview(); // Unfreeze on error
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error conducting visual search: $e')),
@@ -310,6 +314,7 @@ class _ARPageState extends State<ARPage>
                     Padding(
                       padding: const EdgeInsets.only(bottom: 32.0),
                       child: FloatingActionButton.extended(
+                        heroTag: 'ar_fab',
                         onPressed: _captureAndSearch,
                         icon: const Icon(Icons.search),
                         label: const Text('Scan Image'),
@@ -384,6 +389,7 @@ class _ARPageState extends State<ARPage>
                     setState(() {
                       _showDetails = false;
                     });
+                    _cameraController?.resumePreview(); // Resume frame when closing
                   },
                 ),
               ],
@@ -404,61 +410,86 @@ class _ARPageState extends State<ARPage>
                 separatorBuilder: (context, index) => const SizedBox(height: 16),
                 itemBuilder: (context, index) {
                   final match = _searchResults[index];
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(12),
-                          image: match['thumbnail'] != null
-                              ? DecorationImage(
-                                  image: CachedNetworkImageProvider(match['thumbnail']),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
-                        ),
-                        child: match['thumbnail'] == null
-                            ? const Icon(Icons.image, color: Colors.grey)
-                            : null,
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              match['title'] ?? 'Unknown Item',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
+                  return InkWell(
+                    onTap: () async {
+                      if (match['link'] != null && match['link'].toString().isNotEmpty) {
+                        try {
+                          final uri = Uri.parse(match['link']);
+                          final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          if (!launched && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Could not open link.')),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Could not open link.')),
+                            );
+                          }
+                        }
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.circular(12),
+                              image: match['thumbnail'] != null
+                                  ? DecorationImage(
+                                      image: CachedNetworkImageProvider(match['thumbnail']),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
                             ),
-                            const SizedBox(height: 4),
-                            if (match['source'] != null)
-                              Text(
-                                match['source'],
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey[600],
+                            child: match['thumbnail'] == null
+                                ? const Icon(Icons.image, color: Colors.grey)
+                                : null,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  match['title'] ?? 'Unknown Item',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
                                 ),
-                              ),
-                            const SizedBox(height: 4),
-                            if (match['price'] != null)
-                              Text(
-                                match['price'].toString(),
-                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                          ],
-                        ),
+                                const SizedBox(height: 4),
+                                if (match['source'] != null)
+                                  Text(
+                                    match['source'],
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                const SizedBox(height: 4),
+                                if (match['price'] != null)
+                                  Text(
+                                    match['price'].toString(),
+                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   );
                 },
               ),

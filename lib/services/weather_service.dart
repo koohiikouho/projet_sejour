@@ -77,6 +77,53 @@ class WeatherService {
     }
   }
 
+  Future<WeatherData> getWeatherDataByCity(String cityName) async {
+    final apiKey = dotenv.env['OPENWEATHER_API_KEY'];
+
+    if (apiKey == null || apiKey.isEmpty || apiKey == 'YOUR_OPENWEATHER_API_KEY') {
+      // Mock data if no API key is provided
+      debugPrint('Using mock weather data for city (no API key found)');
+      return WeatherData(
+        temperature: 22.0,
+        condition: WeatherCondition.clouds,
+        cityName: cityName,
+      );
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl?q=$cityName&appid=$apiKey&units=metric'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return WeatherData(
+          temperature: (data['main']['temp'] as num).toDouble(),
+          condition: _mapCondition(data['weather'][0]['main']),
+          cityName: data['name'],
+        );
+      } else if (response.statusCode == 401) {
+        debugPrint('Weather Service: 401 Unauthorized. Using mock data.');
+        return WeatherData(
+          temperature: 20.0,
+          condition: WeatherCondition.clear,
+          cityName: "$cityName (Mock)",
+        );
+      } else {
+        final errorData = jsonDecode(response.body);
+        debugPrint('Weather API Error (${response.statusCode}): ${errorData['message']}');
+        throw Exception('API Error: ${errorData['message']}');
+      }
+    } catch (e) {
+      debugPrint('Weather Service Exception: $e');
+      return WeatherData(
+        temperature: 0.0,
+        condition: WeatherCondition.other,
+        cityName: "Error loading weather",
+      );
+    }
+  }
+
   WeatherCondition _mapCondition(String condition) {
     switch (condition.toLowerCase()) {
       case 'clear':

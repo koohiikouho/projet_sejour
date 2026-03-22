@@ -77,6 +77,7 @@ void onStart(ServiceInstance service) async {
   final String userId = prefs.getString('auth_token') ?? 'user_123_anon';
   final String teamId = 'team_alpha';
   final String userName = prefs.getString('user_name') ?? 'Pilgrim User';
+  final String? googlePhotoUrl = prefs.getString('user_profile_pic');
 
   Geolocator.getPositionStream(locationSettings: locationSettings)
       .listen((Position position) async {
@@ -108,7 +109,8 @@ void onStart(ServiceInstance service) async {
         'longitude': position.longitude,
         'lastUpdated': FieldValue.serverTimestamp(),
         'isOnline': true,
-        'avatarUrl': 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(userName)}&background=random',
+        'avatarUrl': googlePhotoUrl?.isNotEmpty == true ? googlePhotoUrl : 
+                    'https://ui-avatars.com/api/?name=${Uri.encodeComponent(userName)}&background=6366f1&color=fff&size=128&format=png',
       }, SetOptions(merge: true));
       
       debugPrint("Background Location Pushed: ${position.latitude}, ${position.longitude}");

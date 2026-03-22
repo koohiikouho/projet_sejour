@@ -62,6 +62,7 @@ class _VaultPageState extends State<VaultPage> with SingleTickerProviderStateMix
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'vault_fab',
         onPressed: _showUploadModal,
         icon: const Icon(Icons.upload_file),
         label: const Text('Upload'),

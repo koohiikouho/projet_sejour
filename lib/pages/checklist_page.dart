@@ -162,10 +162,12 @@ class _ChecklistPageState extends State<ChecklistPage> {
                             children: [
                               Icon(Icons.warning_amber_rounded, color: colorScheme.error),
                               const SizedBox(width: 12),
-                              Expanded(
+                               Expanded(
                                 child: Text(
                                   'Note: Weather items hidden due to error (${_errorMessage!.split(':').last.trim()}).',
                                   style: TextStyle(color: colorScheme.onErrorContainer, fontSize: 13),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
                                 ),
                               ),
                               IconButton(
@@ -201,6 +203,8 @@ class _ChecklistPageState extends State<ChecklistPage> {
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                     ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
                                   ),
                                   Text(
                                     '${_weatherData?.temperature.toStringAsFixed(1)}°C',

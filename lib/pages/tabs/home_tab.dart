@@ -138,11 +138,15 @@ class _HomeTabState extends State<HomeTab> {
                   context,
                 ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
-              Text(
-                _currentDay != null ? _formatDate(_currentDay!.date) : _formatDate(DateTime.now()),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w600,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  _currentDay != null ? _formatDate(_currentDay!.date) : _formatDate(DateTime.now()),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

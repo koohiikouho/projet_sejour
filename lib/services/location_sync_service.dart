@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:projet_sejour/models/team_member_model.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:projet_sejour/services/badge_service.dart';
@@ -148,7 +149,8 @@ class LocationSyncService {
         'longitude': position.longitude,
         'lastUpdated': FieldValue.serverTimestamp(),
         'isOnline': isOnline,
-        'avatarUrl': 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(name)}&background=random',
+        'avatarUrl': FirebaseAuth.instance.currentUser?.photoURL ?? 
+                    'https://ui-avatars.com/api/?name=${Uri.encodeComponent(name)}&background=6366f1&color=fff&size=128&format=png',
       }, SetOptions(merge: true));
     } catch (e) {
       debugPrint('Error updating location: $e');

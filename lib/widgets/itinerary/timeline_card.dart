@@ -194,11 +194,14 @@ class TimelineCard extends StatelessWidget {
                               color: colorScheme.primary,
                             ),
                             const SizedBox(width: 4),
-                            Text(
-                              'Guide: ${item['guide']}',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: colorScheme.primary,
+                            Flexible(
+                              child: Text(
+                                'Guide: ${item['guide']}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: colorScheme.primary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],

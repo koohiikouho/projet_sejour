@@ -105,7 +105,7 @@ class CustomNavBar extends StatelessWidget {
                         ),
                       ),
                       Expanded(
-                        child: _buildNavItem(context, Icons.widgets_rounded, 3),
+                        child: _buildNavItem(context, Icons.calendar_month_rounded, 3),
                       ),
                       Expanded(
                         child: _buildNavItem(context, Icons.person_rounded, 4),

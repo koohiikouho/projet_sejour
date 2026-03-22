@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:projet_sejour/models/user_profile.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:projet_sejour/pages/edit_profile_page.dart';
@@ -33,9 +34,34 @@ class ProfileInfoCard extends StatelessWidget {
           ),
           child: CircleAvatar(
             radius: 50,
-            backgroundImage: profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty
-                ? CachedNetworkImageProvider(profile.avatarUrl!)
-                : NetworkImage('https://ui-avatars.com/api/?name=${Uri.encodeComponent(profile.username)}&background=random') as ImageProvider,
+            backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+            child: ClipOval(
+              child: CachedNetworkImage(
+                imageUrl: (profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty)
+                    ? profile.avatarUrl!
+                    : (FirebaseAuth.instance.currentUser?.photoURL != null && FirebaseAuth.instance.currentUser!.photoURL!.isNotEmpty)
+                        ? FirebaseAuth.instance.currentUser!.photoURL!
+                        : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(profile.username)}&background=6366f1&color=fff&size=128&format=png',
+                placeholder: (context, url) => Center(
+                  child: Text(
+                    profile.username.isNotEmpty ? profile.username[0].toUpperCase() : '?',
+                    style: TextStyle(
+                      color: colorScheme.primary,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Icon(
+                  Icons.person,
+                  size: 60,
+                  color: colorScheme.primary,
+                ),
+                fit: BoxFit.cover,
+                width: 100,
+                height: 100,
+              ),
+            ),
           ),
         ),
         const SizedBox(width: 16),

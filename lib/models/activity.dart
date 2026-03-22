@@ -1,6 +1,25 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 
+class TodoItem {
+  String title;
+  bool isChecked;
+
+  TodoItem({required this.title, this.isChecked = false});
+
+  factory TodoItem.fromJson(Map<String, dynamic> json) {
+    return TodoItem(
+      title: json['title'] as String,
+      isChecked: json['isChecked'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'isChecked': isChecked,
+  };
+}
+
 class Activity {
   final String activityId;
   final String dayId; // Foreign Key for SQLite
@@ -10,9 +29,11 @@ class Activity {
   final String category;
   final String mobilityRating;
   final String location;
+  final double? latitude;
+  final double? longitude;
   final DateTime scheduledArrival;
   final DateTime scheduledDeparture;
-  final List<String> whatToBring;
+  final List<TodoItem> whatToBring;
   final DateTime lastUpdatedAt;
   final bool isCompleted;
 
@@ -25,6 +46,8 @@ class Activity {
     required this.category,
     required this.mobilityRating,
     required this.location,
+    this.latitude,
+    this.longitude,
     required this.scheduledArrival,
     required this.scheduledDeparture,
     required this.whatToBring,
@@ -61,12 +84,32 @@ class Activity {
       category: map['category'] as String,
       mobilityRating: map['mobilityRating']?.toString() ?? '',
       location: map['location'] as String,
+      latitude: map['latitude'] as double?,
+      longitude: map['longitude'] as double?,
       scheduledArrival: DateTime.parse(map['scheduledArrival'] as String),
       scheduledDeparture: DateTime.parse(map['scheduledDeparture'] as String),
-      whatToBring: List<String>.from(json.decode(map['whatToBring'] as String)),
+      whatToBring: _parseWhatToBring(map['whatToBring']),
       lastUpdatedAt: DateTime.parse(map['lastUpdatedAt'] as String),
       isCompleted: (map['isCompleted'] as int?) == 1,
     );
+  }
+
+  static List<TodoItem> _parseWhatToBring(dynamic value) {
+    if (value == null) return [];
+    try {
+      final decoded = json.decode(value as String);
+      if (decoded is List) {
+        return decoded.map((item) {
+          if (item is String) {
+            return TodoItem(title: item);
+          } else if (item is Map<String, dynamic>) {
+            return TodoItem.fromJson(item);
+          }
+          return TodoItem(title: item.toString());
+        }).toList();
+      }
+    } catch (_) {}
+    return [];
   }
 
   Map<String, dynamic> toSqlite() {
@@ -79,10 +122,12 @@ class Activity {
       'category': category,
       'mobilityRating': mobilityRating,
       'location': location,
+      'latitude': latitude,
+      'longitude': longitude,
       'scheduledArrival': scheduledArrival.toIso8601String(),
       'scheduledDeparture': scheduledDeparture.toIso8601String(),
       // Store String array gracefully as localized JSON string
-      'whatToBring': json.encode(whatToBring), 
+      'whatToBring': json.encode(whatToBring.map((i) => i.toJson()).toList()), 
       'lastUpdatedAt': lastUpdatedAt.toIso8601String(),
       'isCompleted': isCompleted ? 1 : 0,
     };

@@ -65,6 +65,36 @@ class _SurveysPageState extends State<SurveysPage> {
                     },
                   ),
                 ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final periods = await _feedbackService.getSurveyPeriods();
+          if (periods.isNotEmpty && mounted) {
+            // Priority: current period not answered > first period not answered > last period
+            final currentPeriod = periods.lastWhere(
+              (p) => !p.isAnswered && (p.start.isBefore(DateTime.now()) || p.start.day == DateTime.now().day),
+              orElse: () => periods.firstWhere((p) => !p.isAnswered, orElse: () => periods.last)
+            );
+            
+            final result = await showDialog<bool>(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => SurveyDialog(period: currentPeriod),
+            );
+            
+            if (result == true) {
+              _loadData();
+            }
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Could not find any survey periods. Start a trip first!')),
+            );
+          }
+        },
+        icon: const Icon(Icons.science_outlined),
+        label: const Text('Simulate Survey'),
+        backgroundColor: colorScheme.primaryContainer,
+        foregroundColor: colorScheme.onPrimaryContainer,
+      ),
     );
   }
 
@@ -140,10 +170,14 @@ class _SurveysPageState extends State<SurveysPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Survey #${period.surveyNo}',
-                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5, color: Colors.grey),
+                          Expanded(
+                            child: Text(
+                              'Survey #${period.surveyNo}',
+                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 0.5, color: Colors.grey),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           _buildStatusBadge(period, isMissed, isUpcoming, isCurrent),
                         ],
                       ),

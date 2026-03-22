@@ -4,11 +4,17 @@ import 'package:projet_sejour/services/auth_service.dart';
 import 'package:projet_sejour/pages/badges_page.dart';
 import 'package:projet_sejour/pages/chatbot_page.dart';
 import 'package:projet_sejour/pages/login_page.dart';
-import 'package:projet_sejour/pages/checklist_page.dart';
-import 'package:projet_sejour/pages/surveys_page.dart';
+import 'package:projet_sejour/pages/settings_page.dart';
 import 'package:projet_sejour/pages/journal/journal_history_page.dart';
+import 'package:projet_sejour/pages/surveys_page.dart';
+import 'package:projet_sejour/pages/vault/vault_page.dart';
 import 'package:projet_sejour/pages/vault/vault_page.dart';
 import 'package:projet_sejour/pages/guides/guide_repository_page.dart';
+import 'package:projet_sejour/services/feedback_service.dart';
+import 'package:projet_sejour/widgets/feedback/survey_dialog.dart';
+import 'package:projet_sejour/services/mock_data_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -70,9 +76,35 @@ class AppDrawer extends StatelessWidget {
                       ),
                       child: CircleAvatar(
                         radius: 36,
-                        backgroundImage: profilePic != null && profilePic.isNotEmpty
-                            ? CachedNetworkImageProvider(profilePic)
-                            : NetworkImage('https://ui-avatars.com/api/?name=${Uri.encodeComponent(name)}&background=random') as ImageProvider,
+                        backgroundColor: colorScheme.primary.withValues(
+                          alpha: 0.1,
+                        ),
+                        child: ClipOval(
+                          child: CachedNetworkImage(
+                            imageUrl:
+                                (profilePic != null && profilePic.isNotEmpty)
+                                ? profilePic
+                                : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(name)}&background=6366f1&color=fff&size=128&format=png',
+                            placeholder: (context, url) => Center(
+                              child: Text(
+                                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                style: TextStyle(
+                                  color: colorScheme.primary,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Icon(
+                              Icons.person,
+                              size: 40,
+                              color: colorScheme.primary,
+                            ),
+                            fit: BoxFit.cover,
+                            width: 72,
+                            height: 72,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -98,7 +130,7 @@ class AppDrawer extends StatelessWidget {
               );
             },
           ),
-          
+
           Expanded(
             child: GridView.count(
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
@@ -114,7 +146,9 @@ class AppDrawer extends StatelessWidget {
                     Navigator.pop(context); // Close Drawer
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const ChatbotPage()),
+                      MaterialPageRoute(
+                        builder: (context) => const ChatbotPage(),
+                      ),
                     );
                   },
                 ),
@@ -126,7 +160,9 @@ class AppDrawer extends StatelessWidget {
                     Navigator.pop(context); // Close Drawer
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const BadgesPage()),
+                      MaterialPageRoute(
+                        builder: (context) => const BadgesPage(),
+                      ),
                     );
                   },
                 ),
@@ -136,7 +172,12 @@ class AppDrawer extends StatelessWidget {
                   title: 'Settings',
                   onTap: () {
                     Navigator.pop(context);
-                    // Navigate to Settings
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SettingsPage(),
+                      ),
+                    );
                   },
                 ),
                 _buildGridTile(
@@ -147,7 +188,9 @@ class AppDrawer extends StatelessWidget {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const JournalHistoryPage()),
+                      MaterialPageRoute(
+                        builder: (context) => const JournalHistoryPage(),
+                      ),
                     );
                   },
                 ),
@@ -159,19 +202,9 @@ class AppDrawer extends StatelessWidget {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const SurveysPage()),
-                    );
-                  },
-                ),
-                _buildGridTile(
-                  context: context,
-                  icon: Icons.checklist_rtl_outlined,
-                  title: 'Checklists',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const ChecklistPage()),
+                      MaterialPageRoute(
+                        builder: (context) => const SurveysPage(),
+                      ),
                     );
                   },
                 ),
@@ -183,7 +216,9 @@ class AppDrawer extends StatelessWidget {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const GuideRepositoryPage()),
+                      MaterialPageRoute(
+                        builder: (context) => const GuideRepositoryPage(),
+                      ),
                     );
                   },
                 ),
@@ -195,23 +230,51 @@ class AppDrawer extends StatelessWidget {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const VaultPage()),
+                      MaterialPageRoute(
+                        builder: (context) => const VaultPage(),
+                      ),
                     );
                   },
                 ),
                 _buildGridTile(
                   context: context,
-                  icon: Icons.info_outline,
-                  title: 'About Us',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to About Us
+                  icon: Icons.data_array_rounded,
+                  title: 'Generate Mock Trip',
+                  onTap: () async {
+                    Navigator.pop(context); // Close Drawer
+                    
+                    try {
+                      // Show loading indicator
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Generating dummy data...')),
+                        );
+                      }
+                      
+                      final mockService = MockDataService();
+                      final prefs = await SharedPreferences.getInstance();
+                      final userId = FirebaseAuth.instance.currentUser?.uid ?? prefs.getString('auth_token') ?? 'anonymous';
+                      
+                      await mockService.generateDummyItinerary(userId);
+                      
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Dummy Data Generated and Synced!')),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error generating data: $e')),
+                        );
+                      }
+                    }
                   },
                 ),
               ],
             ),
           ),
-          
+
           // Footer Section
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -223,7 +286,11 @@ class AppDrawer extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  leading: Icon(Icons.logout, color: colorScheme.error, size: 26),
+                  leading: Icon(
+                    Icons.logout,
+                    color: colorScheme.error,
+                    size: 26,
+                  ),
                   title: Text(
                     'Log Out',
                     style: TextStyle(
@@ -237,7 +304,9 @@ class AppDrawer extends StatelessWidget {
                     await authService.logout();
                     if (context.mounted) {
                       Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (context) => const LoginPage()),
+                        MaterialPageRoute(
+                          builder: (context) => const LoginPage(),
+                        ),
                         (route) => false,
                       );
                     }
@@ -247,7 +316,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Projet Sejour v1.0.0',
+                  'Projet Sejour v0.2.0',
                   style: TextStyle(
                     color: colorScheme.onSurface.withValues(alpha: 0.4),
                     fontSize: 12,
@@ -296,11 +365,7 @@ class AppDrawer extends StatelessWidget {
                   color: colorScheme.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  color: colorScheme.primary,
-                  size: 32,
-                ),
+                child: Icon(icon, color: colorScheme.primary, size: 32),
               ),
               const SizedBox(height: 12),
               Text(
