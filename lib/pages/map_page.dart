@@ -156,7 +156,6 @@ class _MapPageState extends State<MapPage> {
       LocationComponentSettings(
         enabled: true,
         pulsingEnabled: true,
-        showAccuracyRing: true,
         puckBearingEnabled: true,
         puckBearing: PuckBearing.HEADING,
       ),
@@ -182,6 +181,7 @@ class _MapPageState extends State<MapPage> {
 
     try {
       final response = await http.get(url);
+      if (!mounted) return;
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final routes = data['routes'] as List?;
@@ -195,6 +195,7 @@ class _MapPageState extends State<MapPage> {
 
           if (_polylineAnnotationManager != null) {
             await _polylineAnnotationManager!.deleteAll();
+            if (!mounted) return;
             await _polylineAnnotationManager!.create(
               PolylineAnnotationOptions(
                 geometry: LineString(coordinates: points),
@@ -206,7 +207,9 @@ class _MapPageState extends State<MapPage> {
         }
       }
     } catch (e) {
-      debugPrint('Error fetching route: $e');
+      if (mounted) {
+        debugPrint('Error fetching route: $e');
+      }
     }
   }
 

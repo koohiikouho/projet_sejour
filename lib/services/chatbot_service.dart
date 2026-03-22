@@ -82,7 +82,11 @@ class ChatbotService {
           final daysSnapshot = await tripDoc.reference.collection('itineraryDays').orderBy('dayNumber').get();
           for (var dayDoc in daysSnapshot.docs) {
             final dayData = dayDoc.data();
-            context += "  Day ${dayData['dayNumber']} (${dayData['date']?.toDate()?.toString()?.split(' ')[0] ?? 'N/A'}):\n";
+            final dynamic dateValue = dayData['date'];
+            final String datePart = (dateValue is Timestamp) 
+                ? dateValue.toDate().toString().split(' ')[0] 
+                : 'N/A';
+            context += "  Day ${dayData['dayNumber']} ($datePart):\n";
             
             final activitiesSnapshot = await dayDoc.reference.collection('activities').get();
             for (var actDoc in activitiesSnapshot.docs) {

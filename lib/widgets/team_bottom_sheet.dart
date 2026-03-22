@@ -23,6 +23,7 @@ class _TeamBottomSheetState extends State<TeamBottomSheet> {
   bool _isLoading = false;
 
   void _showError(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
   }
 
