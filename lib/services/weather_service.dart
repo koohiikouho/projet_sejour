@@ -78,6 +78,19 @@ class WeatherService {
   }
 
   Future<WeatherData> getWeatherDataByCity(String cityName) async {
+    // Regex to match coordinates like "48.8584, 2.2945" or "Unknown (48.8, 2.2)"
+    final coordRegex = RegExp(r'(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)');
+    final match = coordRegex.firstMatch(cityName);
+
+    if (match != null) {
+      final lat = double.tryParse(match.group(1)!);
+      final lon = double.tryParse(match.group(2)!);
+      if (lat != null && lon != null) {
+        debugPrint('Detected coordinates in city name string, routing to getWeatherData($lat, $lon)');
+        return getWeatherData(lat, lon);
+      }
+    }
+
     final apiKey = dotenv.env['OPENWEATHER_API_KEY'];
 
     if (apiKey == null || apiKey.isEmpty || apiKey == 'YOUR_OPENWEATHER_API_KEY') {

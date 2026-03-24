@@ -33,7 +33,15 @@ class _ActivityDetailsPageState extends State<ActivityDetailsPage> {
     }
 
     try {
-      final weather = await _weatherService.getWeatherDataByCity(_currentActivity.location);
+      WeatherData weather;
+      if (_currentActivity.latitude != null && _currentActivity.longitude != null) {
+        weather = await _weatherService.getWeatherData(
+          _currentActivity.latitude!,
+          _currentActivity.longitude!,
+        );
+      } else {
+        weather = await _weatherService.getWeatherDataByCity(_currentActivity.location);
+      }
       if (mounted) {
         setState(() {
           _weatherData = weather;
