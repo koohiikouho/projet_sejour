@@ -14,11 +14,17 @@ class VaultPage extends StatefulWidget {
 class _VaultPageState extends State<VaultPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final VaultService _vaultService = VaultService();
+  
+  late Stream<List<VaultDocument>> _myDocumentsStream;
+  late Stream<List<VaultDocument>> _sharedDocumentsStream;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    
+    _myDocumentsStream = _vaultService.streamMyDocuments();
+    _sharedDocumentsStream = _vaultService.streamSharedDocuments();
   }
 
   @override
@@ -57,8 +63,8 @@ class _VaultPageState extends State<VaultPage> with SingleTickerProviderStateMix
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildDocumentList(_vaultService.streamMyDocuments(), true),
-          _buildDocumentList(_vaultService.streamSharedDocuments(), false),
+          DocumentList(stream: _myDocumentsStream, isPrivate: true, vaultService: _vaultService),
+          DocumentList(stream: _sharedDocumentsStream, isPrivate: false, vaultService: _vaultService),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -69,11 +75,39 @@ class _VaultPageState extends State<VaultPage> with SingleTickerProviderStateMix
       ),
     );
   }
+}
 
-  Widget _buildDocumentList(Stream<List<VaultDocument>> stream, bool isPrivate) {
+class DocumentList extends StatefulWidget {
+  final Stream<List<VaultDocument>> stream;
+  final bool isPrivate;
+  final VaultService vaultService;
+
+  const DocumentList({
+    super.key,
+    required this.stream,
+    required this.isPrivate,
+    required this.vaultService,
+  });
+
+  @override
+  State<DocumentList> createState() => _DocumentListState();
+}
+
+class _DocumentListState extends State<DocumentList> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true; // This keeps the tab state alive
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context); // Required by AutomaticKeepAliveClientMixin
+    
     return StreamBuilder<List<VaultDocument>>(
-      stream: stream,
+      stream: widget.stream,
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+        
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -88,7 +122,7 @@ class _VaultPageState extends State<VaultPage> with SingleTickerProviderStateMix
                 Icon(Icons.folder_open, size: 64, color: Colors.grey[300]),
                 const SizedBox(height: 16),
                 Text(
-                  isPrivate
+                  widget.isPrivate
                     ? 'No private documents yet.'
                     : 'No program materials shared yet.',
                   style: TextStyle(color: Colors.grey[500], fontSize: 16),
@@ -103,14 +137,22 @@ class _VaultPageState extends State<VaultPage> with SingleTickerProviderStateMix
           itemCount: documents.length,
           itemBuilder: (context, index) {
             final doc = documents[index];
-            return _buildDocumentCard(doc);
+            return _DocumentCard(doc: doc, vaultService: widget.vaultService);
           },
         );
       },
     );
   }
+}
 
-  Widget _buildDocumentCard(VaultDocument doc) {
+class _DocumentCard extends StatelessWidget {
+  final VaultDocument doc;
+  final VaultService vaultService;
+
+  const _DocumentCard({required this.doc, required this.vaultService});
+
+  @override
+  Widget build(BuildContext context) {
     final bool isPdf = doc.fileUrl.toLowerCase().contains('.pdf');
     final IconData fileIcon = isPdf ? Icons.picture_as_pdf : Icons.image;
 
@@ -150,11 +192,7 @@ class _VaultPageState extends State<VaultPage> with SingleTickerProviderStateMix
         trailing: PopupMenuButton<String>(
           onSelected: (value) {
             if (value == 'delete') {
-              _confirmDelete(doc);
-            } else if (value == 'open') {
-              // TODO: Implement open or download logic
-              // For images, we can show a cached network image
-              // For PDFs, we might need url_launcher or a pdf viewer package
+              _confirmDelete(context, doc);
             }
           },
           itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
@@ -172,7 +210,7 @@ class _VaultPageState extends State<VaultPage> with SingleTickerProviderStateMix
     );
   }
 
-  Future<void> _confirmDelete(VaultDocument doc) async {
+  Future<void> _confirmDelete(BuildContext context, VaultDocument doc) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -193,12 +231,11 @@ class _VaultPageState extends State<VaultPage> with SingleTickerProviderStateMix
     );
 
     if (confirmed == true) {
-      // Show loading indicator in a robust app
       try {
-        await _vaultService.deleteDocument(doc);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Document deleted.')));
+        await vaultService.deleteDocument(doc);
+        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Document deleted.')));
       } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
+        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
       }
     }
   }
@@ -260,10 +297,10 @@ class _DocumentUploadModalState extends State<DocumentUploadModal> {
         _selectedFile!,
         _titleController.text.trim(),
         _selectedCategory,
-        isGlobal: false, // Default to private for now
+        isGlobal: false,
       );
       if (mounted) {
-        Navigator.pop(context); // Close the modal
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Upload complete!')));
       }
     } catch (e) {

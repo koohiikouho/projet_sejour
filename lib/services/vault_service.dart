@@ -65,37 +65,38 @@ class VaultService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  Future<String> _getUserId() async {
-    final prefs = await SharedPreferences.getInstance();
-    return FirebaseAuth.instance.currentUser?.uid ?? prefs.getString('auth_token') ?? 'anonymous';
+  String _getSyncUserId() {
+    return FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
   }
 
   CollectionReference _getVaultCollection() {
     return _firestore.collection('vault_documents');
   }
 
-  // Stream user's personal documents
-  Stream<List<VaultDocument>> streamMyDocuments() async* {
-    final userId = await _getUserId();
-    yield* _getVaultCollection()
+  // Stream user's personal documents - using asBroadcastStream to allow multiple listeners
+  Stream<List<VaultDocument>> streamMyDocuments() {
+    final userId = _getSyncUserId();
+    return _getVaultCollection()
         .where('userId', isEqualTo: userId)
         .orderBy('uploadDate', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => VaultDocument.fromFirestore(doc)).toList());
+        .map((snapshot) => snapshot.docs.map((doc) => VaultDocument.fromFirestore(doc)).toList())
+        .asBroadcastStream();
   }
 
-  // Stream global/shared program documents
+  // Stream global/shared program documents - using asBroadcastStream to allow multiple listeners
   Stream<List<VaultDocument>> streamSharedDocuments() {
     return _getVaultCollection()
         .where('userId', isEqualTo: 'global')
         .orderBy('uploadDate', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => VaultDocument.fromFirestore(doc)).toList());
+        .map((snapshot) => snapshot.docs.map((doc) => VaultDocument.fromFirestore(doc)).toList())
+        .asBroadcastStream();
   }
 
   // Upload a new document
   Future<void> uploadDocument(File file, String title, String category, {bool isGlobal = false}) async {
-    final userId = isGlobal ? 'global' : await _getUserId();
+    final userId = isGlobal ? 'global' : _getSyncUserId();
     final sanitizedUserId = userId.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final ext = file.path.split('.').last;
@@ -120,22 +121,19 @@ class VaultService {
       'category': category,
       'fileUrl': downloadUrl,
       'uploadDate': Timestamp.now(),
-      'isVerified': false, // Requires admin verification later
+      'isVerified': false, 
     });
   }
 
   // Delete a document
   Future<void> deleteDocument(VaultDocument doc) async {
-    final currentUserId = await _getUserId();
-    // Basic security check: only owner can delete, unless they are admin (skipped for brevity)
+    final currentUserId = _getSyncUserId();
     if (doc.userId != currentUserId && doc.userId != 'global') {
       throw Exception('Unauthorized to delete this document.');
     }
     
-    // Delete from Firestore
     await _getVaultCollection().doc(doc.id).delete();
     
-    // Attempt to delete from Storage
     try {
       final ref = _storage.refFromURL(doc.fileUrl);
       await ref.delete();
