@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:langchain/langchain.dart';
 import 'package:langchain_google/langchain_google.dart';
+import 'package:projet_sejour/data/mock_data.dart';
 
 class ChatbotService {
   late final ChatGoogleGenerativeAI _model;
@@ -51,7 +52,13 @@ class ChatbotService {
         context += "- Team ID: ${teamId ?? 'None'}\n";
       }
 
-      // 2. JOURNAL DATA
+      // 2. ANNOUNCEMENTS (Mock Data)
+      context += "\nLATEST ANNOUNCEMENTS:\n";
+      for (var a in mockAnnouncements) {
+        context += "- [${a.time}] ${a.title}: ${a.description}\n";
+      }
+
+      // 3. JOURNAL DATA
       context += "\nJOURNAL MESSAGES:\n";
       final journalSnapshot = await _firestore
           .collection('journals')
@@ -70,7 +77,7 @@ class ChatbotService {
         context += "(No journal entries found.)\n";
       }
 
-      // 3. TRIPS & HIERARCHICAL ITINERARY
+      // 4. TRIPS & HIERARCHICAL ITINERARY
       context += "\nTRIP ITINERARIES:\n";
       final tripsSnapshot = await _firestore.collection('trips').limit(2).get();
       
@@ -117,6 +124,12 @@ class ChatbotService {
     
     final systemPrompt = ChatMessage.system(
       'You are Lumen AI Assistant for Projet Sejour.\n'
+      'STRICT RULES:\n'
+      '1. ONLY answer questions related to Projet Sejour, travel, or the user\'s stay.\n'
+      '2. Use the provided context (Announcements, Itinerary, Journal) to answer accurately.\n'
+      '3. DO NOT provide code, programming help, or technical advice.\n'
+      '4. If a user asks something outside this scope, politely decline.\n'
+      '\n'
       'CRITICAL FORMATTING RULES:\n'
       '1. When presenting an itinerary or list of activities, ALWAYS use a clean, bulleted list or a table-like format.\n'
       '2. Use bold text for site names and times to make them stand out.\n'
@@ -124,7 +137,7 @@ class ChatbotService {
       '4. If multiple days are requested, use clear headers for each Day (e.g., "### Day 1").\n'
       '5. Keep your responses concise and easy to read on a mobile screen.\n'
       '\n'
-      'REAL-TIME DATABASE CONTEXT:\n'
+      'REAL-TIME CONTEXT:\n'
       '$context'
     );
 
